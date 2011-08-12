@@ -3,7 +3,7 @@
   This software is released under a BSD license, adapted from
   http://opensource.org/licenses/bsd-license.php
 
-  Copyright (c) 2010, Brian M. Clapper
+  Copyright (c) 2010-2011, Brian M. Clapper
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -37,25 +37,34 @@
 
 package org.clapper.sbtplugins.izpack
 {
-    import scala.xml._
+    import scala.xml.{Comment => XMLComment,
+                      Elem => XMLElem,
+                      MetaData => XMLMetaData,
+                      Node => XMLNode,
+                      NodeSeq => XMLNodeSeq,
+                      Null => XMLNull,
+                      PrettyPrinter => XMLPrettyPrinter,
+                      Text => XMLText,
+                      TopScope => XMLTopScope,
+                      UnprefixedAttribute}
     import scala.collection.mutable.{ListBuffer, 
                                      Map => MutableMap,
                                      HashSet => MutableSet}
     import sbt._
     import java.io.File
 
-    /*-------------------------------------------------------------------*\
-                                Exceptions
-    \*-------------------------------------------------------------------*/
+    // -------------------------------------------------------------------
+    //                          Exceptions
+    // -------------------------------------------------------------------
 
     private[izpack] class IzPluginException(msg: String) extends Exception(msg)
 
     private[izpack] class MissingFieldException(name: String)
         extends IzPluginException("Missing required \"" + name + "\" field")
 
-    /*-------------------------------------------------------------------*\
-                           Traits and Utilities
-    \*-------------------------------------------------------------------*/
+    // ------------------------------------------------------------------
+    //                     Traits and Utilities
+    // ------------------------------------------------------------------
 
     /**
      * Implemented by config-related classes that can take an operating
@@ -91,11 +100,12 @@ package org.clapper.sbtplugins.izpack
         def toOption = if (isEmpty) None else Some(str)
     }
 
-    private[izpack] class XElem(val elem: Elem)
+    private[izpack] class XElem(val elem: XMLElem)
     {
         private def doAdd(name: String, value: String): XElem =
             new XElem(elem % 
-                      new UnprefixedAttribute(name, value, Node.NoAttributes))
+                      new UnprefixedAttribute(name, value,
+                                              XMLNode.NoAttributes))
 
         /**
          * Append an unprefixed attribute to an element, returning a
@@ -137,9 +147,9 @@ package org.clapper.sbtplugins.izpack
         implicit def wrapperToString(is: XString): String =
             is.str
 
-        implicit def elemToWrapper(e: Elem): XElem =
+        implicit def elemToWrapper(e: XMLElem): XElem =
             new XElem(e)
-        implicit def wrapperToElem(ie: XElem): Elem =
+        implicit def wrapperToElem(ie: XElem): XMLElem =
             ie.elem
     }
 
@@ -172,13 +182,14 @@ package org.clapper.sbtplugins.izpack
                 case _ =>
             }
 
-        protected def strOptToXMLElement(name: String): Node =
+        protected def strOptToXMLElement(name: String): XMLNode =
             options.getOrElse(name, None) match
             {
                 case None =>
-                    new Comment("No " + name + " element")
+                    new XMLComment("No " + name + " element")
                 case Some(text) =>
-                    Elem(null, name, Node.NoAttributes, TopScope, Text(text))
+                    XMLElem(null, name, XMLNode.NoAttributes, XMLTopScope,
+                            XMLText(text))
             }
     }
 
@@ -195,13 +206,13 @@ package org.clapper.sbtplugins.izpack
         /**
          * XML for the section
          */
-        protected def sectionToXML: Elem
+        protected def sectionToXML: XMLElem
 
         /**
          * Contains any custom XML for the section. Typically supplied
          * by the writer of the build script.
          */
-        var customXML: NodeSeq = NodeSeq.Empty
+        var customXML: XMLNodeSeq = XMLNodeSeq.Empty
 
         /**
          * Generate the section's XML. Calls out to `sectionToXML`
@@ -209,15 +220,15 @@ package org.clapper.sbtplugins.izpack
          *
          * @return An XML element
          */
-        def toXML: Elem =
+        def toXML: XMLElem =
         {
             // Append any custom XML to the end, as a series of child
             // elements.
             val node = sectionToXML
             val custom = customXML
             val allChildren = node.child ++ custom
-            Elem(node.prefix, node.label, node.attributes, node.scope,
-                 allChildren: _*)
+            XMLElem(node.prefix, node.label, node.attributes, node.scope,
+                    allChildren: _*)
         }
 
         /**
@@ -226,7 +237,7 @@ package org.clapper.sbtplugins.izpack
          * @param path  the SBT path for the file to be written
          * @param str   the string to write
          */
-        protected def writeStringToFile(path: Path, str: String): Unit =
+        protected def writeStringToFile(path: RichFile, str: String): Unit =
             writeStringToFile(path.absolutePath, str)
 
         /**
@@ -253,7 +264,7 @@ package org.clapper.sbtplugins.izpack
          *
          * @return An XML node, either a node of the specified name or a comment
          */
-        protected def maybeXML(name: String, create: Boolean): Node =
+        protected def maybeXML(name: String, create: Boolean): XMLNode =
             maybeXML(name, create, Map.empty[String,String])
 
         /**
@@ -269,28 +280,28 @@ package org.clapper.sbtplugins.izpack
          */
         protected def maybeXML(name: String,
                                create: Boolean,
-                               attrs: Map[String, String]): Node =
+                               attrs: Map[String, String]): XMLNode =
         {
-            def makeAttrs(attrs: List[(String, String)]): MetaData =
+            def makeAttrs(attrs: List[(String, String)]): XMLMetaData =
             {
                 attrs match
                 {
                     case (n, v) :: Nil =>
-                        new UnprefixedAttribute(n, v, Node.NoAttributes)
+                        new UnprefixedAttribute(n, v, XMLNode.NoAttributes)
                     case (n, v) :: tail => 
                         new UnprefixedAttribute(n, v, makeAttrs(tail))
                     case Nil =>
-                        Null
+                        XMLNull
                 }
             }
 
             if (! create)
-                new Comment("No " + name + " element")
+                new XMLComment("No " + name + " element")
 
             else
             {
-                Elem(null, name, makeAttrs(attrs.elements.toList), TopScope,
-                     Text(""))
+                XMLElem(null, name, makeAttrs(attrs.iterator.toList),
+                        XMLTopScope, XMLText(""))
             }
         }
 
@@ -300,9 +311,9 @@ package org.clapper.sbtplugins.izpack
         protected def yesno(b: Boolean): String = if (b) "yes" else "no"
     }
 
-    /*-------------------------------------------------------------------*\
-                                 Main Config Class
-    \*-------------------------------------------------------------------*/
+    // ------------------------------------------------------------------
+    //                           Main Config Class
+    // ------------------------------------------------------------------
 
     /**
      * Base configuration class.
@@ -311,7 +322,7 @@ package org.clapper.sbtplugins.izpack
      *                           actual installation XML file(s)
      * @param log                SBT logger to use
      */
-    abstract class IzPackConfig(val workingInstallDir: Path, 
+    abstract class IzPackConfig(val workingInstallDir: RichFile, 
                                 val log: Logger) extends Section
     {
         final val SectionName = "IzPackConfig"
@@ -408,8 +419,8 @@ package org.clapper.sbtplugins.izpack
             val now = dateFormatter.format(new java.util.Date)
 
             <installation version="1.0">
-            {new Comment("IzPack installation file.")}
-            {new Comment("Generated by org.clapper SBT IzPack plugin: " + now)}
+            {new XMLComment("IzPack installation file.")}
+            {new XMLComment("Generated by SBT IzPack plugin: " + now)}
             {optionalSectionToXML(info, "Info")}
             {languagesToXML}
             {optionalSectionToXML(resources, "Resources")}
@@ -426,10 +437,10 @@ package org.clapper.sbtplugins.izpack
             section match
             {
                 case Some(sect) => sect.toXML
-                case None       => new Comment("No " + name + " section")
+                case None       => new XMLComment("No " + name + " section")
             }
 
-        def installXMLPath: Path = workingInstallDir / "install.xml"
+        def installXMLPath: RichFile = workingInstallDir / "install.xml"
 
         def generate(): Unit =
         {
@@ -439,16 +450,16 @@ package org.clapper.sbtplugins.izpack
             new File(workingInstallDir.absolutePath).mkdirs()
             log.info("Generating " + installXMLPath)
             val xml = toXML
-            val prettyPrinter = new PrettyPrinter(256, 2)
+            val prettyPrinter = new XMLPrettyPrinter(256, 2)
             writeStringToFile(installXMLPath, prettyPrinter.format(xml))
             log.info("Done.")
         }
 
-        private def relPath(s: String) = Path.fromString(workingInstallDir, s)
+        private def relPath(s: String): RichFile = workingInstallDir / s
 
-        /*------------------------------------------------------------------*\
-                                      <info>
-        \*------------------------------------------------------------------*/
+        // ------------------------------------------------------------------
+        //                            <info>
+        // ------------------------------------------------------------------
 
         private case class Author(val name: String, val email: Option[String])
         {
@@ -544,13 +555,13 @@ package org.clapper.sbtplugins.izpack
                 if (authors.size > 0)
                     <authors> {authors.map(_.toXML)} </authors>
                 else
-                    new Comment("no authors")
+                    new XMLComment("no authors")
             }
         }
 
-        /*------------------------------------------------------------------*\
-                                    <resources>
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                          <resources>
+        // -----------------------------------------------------------------
 
         class Resources extends Section
         {
@@ -567,7 +578,7 @@ package org.clapper.sbtplugins.izpack
 
                 individualResources += this
 
-                private var srcOption: Option[Path] = None
+                private var srcOption: Option[RichFile] = None
 
                 import ParseType._
 
@@ -577,8 +588,8 @@ package org.clapper.sbtplugins.izpack
                 def id_=(s: String): Unit = setOption(Id, s)
                 def id: String = getOptionString(Id)
 
-                def source_=(p: Path): Unit = srcOption = Some(p)
-                def source: Path = srcOption.getOrElse(relPath("."))
+                def source_=(p: RichFile): Unit = srcOption = Some(p)
+                def source: RichFile = srcOption.getOrElse(relPath("."))
 
                 protected def sectionToXML =
                 {
@@ -603,7 +614,7 @@ package org.clapper.sbtplugins.izpack
                     new InstallDirectoryBuilder(s)
 
                 val dirs = MutableMap.empty[String,String]
-                var customXML: NodeSeq = NodeSeq.Empty
+                var customXML: XMLNodeSeq = XMLNodeSeq.Empty
 
                 class InstallDirectoryBuilder(val path: String)
                 {
@@ -619,7 +630,7 @@ package org.clapper.sbtplugins.izpack
                             yield <res id={"TargetPanel.dir." + os}
                                        src={installDirString(os, path)}/>
                     }.toList
-                    NodeSeq.fromSeq(nodes ++ customXML)
+                    XMLNodeSeq.fromSeq(nodes ++ customXML)
                 }
 
                 private def installDirString(os: String, path: String): String =
@@ -636,9 +647,9 @@ package org.clapper.sbtplugins.izpack
                 <resources> {individualResources.map(_.toXML)} </resources>
         }
 
-        /*------------------------------------------------------------------*\
-                                    <variables
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                          <variables
+        // -----------------------------------------------------------------
 
         /**
          * Defines variables that will be set in the generated XML and
@@ -660,7 +671,7 @@ package org.clapper.sbtplugins.izpack
                 <variables>
                 {
                     if (variableSettings.size == 0)
-                        new Comment("no variables")
+                        new XMLComment("no variables")
                     else
                         for ((n, v) <- variableSettings) 
                             yield <variable name={n} value={v}/>
@@ -669,9 +680,9 @@ package org.clapper.sbtplugins.izpack
             }
         }
 
-        /*------------------------------------------------------------------*\
-                                    <packaging>
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                          <packaging>
+        // -----------------------------------------------------------------
 
         class Packaging extends Section
         {
@@ -717,7 +728,7 @@ package org.clapper.sbtplugins.izpack
                                 unpacker = "com.izforge.izpack.installer." +
                                            "MultiVolumeUnpacker"
                             case SingleVolume =>
-                                new Comment("no options")
+                                new XMLComment("no options")
                                 unpacker = "com.izforge.izpack.installer." +
                                            "Unpacker"
                         }
@@ -728,9 +739,9 @@ package org.clapper.sbtplugins.izpack
             }
         }
 
-        /*------------------------------------------------------------------*\
-                                    <guiprefs>
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                          <guiprefs>
+        // -----------------------------------------------------------------
 
         class GuiPrefs extends Section
         {
@@ -772,9 +783,9 @@ package org.clapper.sbtplugins.izpack
             }
         }
 
-        /*------------------------------------------------------------------*\
-                                     <panels>
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                           <panels>
+        // -----------------------------------------------------------------
 
         class Panels extends Section
         {
@@ -798,8 +809,8 @@ package org.clapper.sbtplugins.izpack
                 final val Jar = "jar"
                 final val Condition = "condition"
 
-                var jarOption: Option[Path] = None
-                var help: Map[String, Path] = Map.empty[String, Path]
+                var jarOption: Option[RichFile] = None
+                var help: Map[String, RichFile] = Map.empty[String, RichFile]
 
                 private var actions = new ListBuffer[Action]
                 private var validators = new ListBuffer[Validator]
@@ -835,8 +846,8 @@ package org.clapper.sbtplugins.izpack
                 /**
                  * Allows assignment of `jar` field
                  */
-                def jar_=(p: Path): Unit = jarOption = Some(p)
-                def jar: Path = jarOption.getOrElse(relPath("nothing.jar"))
+                def jar_=(p: RichFile): Unit = jarOption = Some(p)
+                def jar: RichFile = jarOption.getOrElse(relPath("nothing.jar"))
 
                 protected def sectionToXML =
                 {
@@ -859,19 +870,19 @@ package org.clapper.sbtplugins.izpack
                                             src={path.absolutePath}/>
                         }
                         else
-                            new Comment("no help")
+                            new XMLComment("no help")
                     }
                     {
                         if (validators.size > 0)
                             validators.map(_.toXML)
                         else
-                            new Comment("no validators")
+                            new XMLComment("no validators")
                     }                            
                     {
                         if (actions.size > 0)
                             <actions>{actions.map(_.toXML)}</actions>
                         else
-                            new Comment("no actions")
+                            new XMLComment("no actions")
                     }
 
                     </panel>
@@ -886,9 +897,9 @@ package org.clapper.sbtplugins.izpack
                 <panels> {panelClasses.map(_.toXML)} </panels>
         }
 
-        /*------------------------------------------------------------------*\
-                                     <packs>
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        //                           <packs>
+        // -----------------------------------------------------------------
 
         class Packs extends Section
         {
@@ -932,7 +943,7 @@ package org.clapper.sbtplugins.izpack
                     val Update = Value("update")
                 }
 
-                class SingleFile(val source: Path, val target: String)
+                class SingleFile(val source: RichFile, val target: String)
                     extends OneFile
                 {
                     final val SectionName = "SingleFile"
@@ -946,7 +957,7 @@ package org.clapper.sbtplugins.izpack
                     }
                 }
 
-                class File(val source: Path, val targetdir: String)
+                class File(val source: RichFile, val targetdir: String)
                     extends OneFile
                 {
                     final val SectionName = "File"
@@ -978,10 +989,10 @@ package org.clapper.sbtplugins.izpack
                     def toXML =
                     {
                         val nodes = files.get.map(path => fileToXML(path))
-                        NodeSeq.fromSeq(nodes.toList)
+                        XMLNodeSeq.fromSeq(nodes.toList)
                     }
 
-                    private def fileToXML(path: Path) =
+                    private def fileToXML(path: RichFile) =
                     {
                         <file src={path.absolutePath}
                               targetdir={targetdir}
@@ -1026,7 +1037,7 @@ package org.clapper.sbtplugins.izpack
                             {operatingSystemsToXML}
                             {
                                 if (args.length == 0)
-                                    new Comment("No args")
+                                    new XMLComment("No args")
                                 else
                                     args.map(a => <arg value={a}/>)
                             }
@@ -1081,7 +1092,9 @@ package org.clapper.sbtplugins.izpack
 package org.clapper.sbtplugins
 {
     import sbt._
-    import java.io.File
+    import Keys._
+    import Defaults._
+    import Project.Initialize
     import scala.io.Source
     import com.izforge.izpack.compiler.CompilerConfig
     import org.clapper.sbtplugins.izpack._
@@ -1092,19 +1105,27 @@ package org.clapper.sbtplugins
      *
      * To use this plugin, mix it into your SBT project.
      */
-    trait IzPackPlugin extends DefaultProject
+    object IzPackPlugin extends Plugin
     {
-        /*------------------------------------------------------------------*\
-                                    Dependencies
-        \*------------------------------------------------------------------*/
+        // -----------------------------------------------------------------
+        // Constants
+        // -----------------------------------------------------------------
 
-        /*------------------------------------------------------------------*\
-                                       Tasks
-        \*------------------------------------------------------------------*/
+        val IzPack = config("izpack") extend(Runtime)
+        val configuration = SettingKey[Option[String]]("configuration")
 
-        /*------------------------------------------------------------------*\
-                                     Methods
-        \*------------------------------------------------------------------*/
+        val makeInstaller = TaskKey[Unit]("make-installer",
+                                          "Generates an IzPack installer")
+        val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
+
+            configuration := None
+        ))
+
+        override lazy val settings = super.settings ++ izPackSettings
+
+        // -----------------------------------------------------------------
+        // Methods
+        // -----------------------------------------------------------------
 
         def generateInstallConfig(config: IzPackConfig): Option[String] =
         {
@@ -1119,7 +1140,7 @@ package org.clapper.sbtplugins
          * @param installerJar   where to store the installer jar file
          */
         def izpackMakeInstaller(config: IzPackConfig, 
-                                installerJar: Path): Option[String] =
+                                installerJar: RichFile): Option[String] =
         {
             config.generate
             izpackMakeInstaller(config.installXMLPath, installerJar)
@@ -1131,10 +1152,10 @@ package org.clapper.sbtplugins
          * @param installConfig   the IzPack installer configuration file
          * @param installerJar    where to store the installer jar file
          */
-        def izpackMakeInstaller(installConfig: Path, 
-                                installerJar: Path): Option[String] =
+        def izpackMakeInstaller(installConfig: RichFile, 
+                                installerJar: RichFile): Option[String] =
         {
-            FileUtilities.withTemporaryDirectory(log)
+            IO.withTemporaryDirectory
             {
                 baseDir =>
 
@@ -1144,8 +1165,10 @@ package org.clapper.sbtplugins
                         CompilerConfig.STANDARD,
                         installerJar.absolutePath
                     )
+/*
                 log.info("Creating installer in " + installerJar + " from " +
                          installConfig)
+*/
                 compilerConfig.executeCompiler
                 None
             }
