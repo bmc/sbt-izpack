@@ -52,6 +52,7 @@ import scala.collection.mutable.{ListBuffer,
                                  Map => MutableMap,
                                  HashSet => MutableSet}
 import sbt._
+import Keys.TaskStreams
 
 // ------------------------------------------------------------------------
 //                               Exceptions
@@ -315,10 +316,9 @@ trait Section
  *
  * @param workingInstallDir  the directory to use to create the
  *                           actual installation XML file(s)
- * @param log                SBT logger to use
+ * @param streams            SBT TaskStreams object
  */
-abstract class IzPackConfig(val workingInstallDir: RichFile,
-                            val log: Logger) extends Section
+abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
 {
     final val SectionName = "IzPackConfig"
 
@@ -436,9 +436,11 @@ abstract class IzPackConfig(val workingInstallDir: RichFile,
 
     def installXMLPath: RichFile = workingInstallDir / "install.xml"
 
-    def generate(): Unit =
+    def generate(streams: TaskStreams): Unit =
     {
         import Path._
+
+        val log = streams.log
 
         log.info("Creating " + workingInstallDir)
         new File(workingInstallDir.absolutePath).mkdirs()
@@ -703,8 +705,8 @@ abstract class IzPackConfig(val workingInstallDir: RichFile,
             if ((packager != MultiVolume) &&
                 ((volumeSize + firstVolFreeSpace) > 0))
             {
-                log.warn("volumeSize and firstVolFreeSpace are " +
-                         "ignored unless packager is MultiVolume.")
+                error("volumeSize and firstVolFreeSpace are " +
+                      "ignored unless packager is MultiVolume.")
             }
 
             var unpacker: String = ""

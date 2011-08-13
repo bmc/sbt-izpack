@@ -41,42 +41,48 @@ import sbt._
 import Keys._
 import Defaults._
 import Project.Initialize
-import scala.io.Source
 import com.izforge.izpack.compiler.CompilerConfig
 
 /**
  * Plugin for SBT (Simple Build Tool) to configure and build an IzPack
  * installer.
  */
-object IzPackPlugin extends Plugin
+object IzPack extends Plugin
 {
     // -----------------------------------------------------------------
     // Constants
     // -----------------------------------------------------------------
 
-    val IzPack = config("izpack") extend(Runtime)
-    val configuration = SettingKey[Option[String]]("configuration")
+    val IzPack = config("izpack")
+    val installerConfig = SettingKey[Option[IzPackConfig]]("installer-config")
+    val installerJar = SettingKey[RichFile]("installer-jar")
+    val generate = TaskKey[Unit]("generate", "Generate IzPack installer")
 
-/*
-    val makeInstaller = TaskKey[Unit]("make-installer",
-                                      "Generates an IzPack installer")
-*/
-    val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
+    private def generateTask(izConfig: Option[IzPackConfig],
+                             outputJar: RichFile,
+                             streams: TaskStreams): Unit =
+    {
+        val cfg = izConfig.getOrElse(error("generate: No IzPack configuration"))
+        generateInstaller(cfg, outputJar, streams)
+    }
 
-        configuration := None
+    val izPackSettings = inConfig(IzPack)(Seq(
+
+        installerConfig := None,
+
+        installerJar := Path(".") / "target" / "installer.jar",
+
+        generate <<= (installerConfig, installerJar, streams) map generateTask
     ))
 
     override lazy val settings = super.settings ++ izPackSettings
 
+    abstract class IzPackConfig(workingInstallDir: RichFile)
+    extends IzPackConfigBase(workingInstallDir)
+
     // -----------------------------------------------------------------
     // Methods
     // -----------------------------------------------------------------
-
-    def generateInstallConfig(config: IzPackConfig): Option[String] =
-    {
-        config.generate
-        None
-    }
 
     /**
      * Build an installer jar, given a configuration object.
@@ -84,10 +90,11 @@ object IzPackPlugin extends Plugin
      * @param config         the configuration object
      * @param installerJar   where to store the installer jar file
      */
-    def izpackMakeInstaller(config: IzPackConfig, 
-                            installerJar: RichFile): Option[String] =
+    def generateInstaller(config: IzPackConfig, 
+                          installerJar: RichFile,
+                          streams: TaskStreams): Unit =
     {
-        config.generate
+        config.generate(streams)
         izpackMakeInstaller(config.installXMLPath, installerJar)
     }
 
