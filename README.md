@@ -9,33 +9,24 @@ build tool.
 [sbt]: http://code.google.com/p/simple-build-tool/
 [izpack]: http://izpack.org/
 
-## Getting this Plugin
+## Using the Plugin
 
-### The Released Version
+First, within your SBT project, create `project/plugins/build.sbt` (if it
+doesn't already exist) and add the following:
 
-In your own project, create a `project/plugins/Plugins.scala` file (if you
-haven't already), and add the following lines, to make the project available
-to your SBT project:
+    // The IzPack plugin is only published for 2.8.1
+    libraryDependencies <<= (scalaVersion, libraryDependencies) { (scv, deps) =>
+        if (scv == "2.8.1")
+            deps :+ "org.clapper" %% "sbt-izpack" % "0.4"
+        else
+            deps
+    }
 
-    val orgClapperMavenRepo = "clapper.org Maven Repo" at "http://maven.clapper.org/"
+Next, in your main project `build.sbt` file, add:
 
-    val izpackPlugin = "org.clapper" % "sbt-izpack-plugin" % "0.1"
+    seq(org.clapper.sbt_izpack.IzPack.izPackSettings: _*)
 
-### The Development Version
-
-You can also use the development version of this plugin (that is, the
-version checked into the [GitHub repository][github-repo]), by building it
-locally.
-
-First, download the plugin's source code by cloning this repository.
-
-    git clone http://github.com/bmc/sbt-plugins.git
-
-Then, within the `izpack` project directory, publish it locally:
-
-    sbt update publish-local
-
-[github-repo]: http://github.com/bmc/sbt-plugins
+Now the plug-in is available.
 
 ## Using the Plugin
 

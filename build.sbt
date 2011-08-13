@@ -41,8 +41,9 @@ libraryDependencies <<= (sbtVersion, scalaVersion, libraryDependencies) { (sbtv,
 
 // External deps
 libraryDependencies ++= Seq(
-    "org.codehaus.izpack" % "izpack-standalone-compiler" % "4.3.4",
-    "org.clapper" %% "grizzled-scala" % "1.0.7"
+    "org.codehaus.izpack" % "izpack-standalone-compiler" % "4.3.4" % "compile",
+    "org.clapper" %% "grizzled-scala" % "1.0.7",
+    "org.scala-lang" % "scala-compiler" % "2.8.1"
 )
 
 // ---------------------------------------------------------------------------

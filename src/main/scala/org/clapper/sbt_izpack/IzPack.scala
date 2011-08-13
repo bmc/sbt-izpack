@@ -43,6 +43,25 @@ import Defaults._
 import Project.Initialize
 import com.izforge.izpack.compiler.CompilerConfig
 
+abstract class IzPackConfig extends IzPackConfigBase
+{
+    private var installDirectory: RichFile = new File(".")
+    private var scalaVersion: String = ""
+
+    IzPack.installDir apply { d => installDirectory = d }
+
+    def InstallSourceDir: RichFile = installDirectory
+}
+
+trait IzPackConfigurator
+{
+    implicit def StringToRichFile(s: String): RichFile = new File(s)
+    implicit def StringToFileSetGlob(s: String) = new FileSetGlob(s)
+
+    def makeConfig(installSourceDir: RichFile, 
+                   scalaVersion: String): IzPackConfig
+}
+
 /**
  * Plugin for SBT (Simple Build Tool) to configure and build an IzPack
  * installer.
@@ -50,52 +69,75 @@ import com.izforge.izpack.compiler.CompilerConfig
 object IzPack extends Plugin
 {
     // -----------------------------------------------------------------
-    // Constants
+    // Plugin Settings
     // -----------------------------------------------------------------
 
     val IzPack = config("izpack")
-    val installerConfig = SettingKey[Option[IzPackConfig]]("installer-config")
+    //val izPackConfig = SettingKey[IzPackConfig]("izpack-config")
+    val izPackConfig = SettingKey[Option[IzPackConfigurator]]("izpack-config")
     val installerJar = SettingKey[RichFile]("installer-jar")
-    val generate = TaskKey[Unit]("generate", "Generate IzPack installer")
+    val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
+    val createInstaller = TaskKey[Unit]("create-installer",
+                                        "Create IzPack installer")
+    val installDir = SettingKey[File]("install-source",
+                                          "Directory containing auxiliary " +
+                                          "source files.")
 
-    private def generateTask(izConfig: Option[IzPackConfig],
-                             outputJar: RichFile,
-                             streams: TaskStreams): Unit =
-    {
-        val cfg = izConfig.getOrElse(error("generate: No IzPack configuration"))
-        generateInstaller(cfg, outputJar, streams)
-    }
+    val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 
-    val izPackSettings = inConfig(IzPack)(Seq(
+        installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
+        installDir <<= baseDirectory(_ / "src" / "installer"),
 
-        installerConfig := None,
+        // Use externalDependencyClasspath setting. 
+        // See https://github.com/harrah/xsbt/wiki/Classpaths
 
-        installerJar := Path(".") / "target" / "installer.jar",
-
-        generate <<= (installerConfig, installerJar, streams) map generateTask
+        createXML <<= createXMLTask,
+        createInstaller <<= createInstallerTask
     ))
-
-    override lazy val settings = super.settings ++ izPackSettings
-
-    abstract class IzPackConfig(workingInstallDir: RichFile)
-    extends IzPackConfigBase(workingInstallDir)
 
     // -----------------------------------------------------------------
     // Methods
     // -----------------------------------------------------------------
 
-    /**
-     * Build an installer jar, given a configuration object.
-     *
-     * @param config         the configuration object
-     * @param installerJar   where to store the installer jar file
-     */
-    def generateInstaller(config: IzPackConfig, 
-                          installerJar: RichFile,
-                          streams: TaskStreams): Unit =
+    private def createXMLTask =
     {
-        config.generate(streams)
-        izpackMakeInstaller(config.installXMLPath, installerJar)
+        (izPackConfig, scalaVersion, installerJar, installDir, streams) map
+        {
+            (izPackConfig, sv, outputJar, installDir, streams) =>
+
+            createXML(izPackConfig, installDir, sv, streams.log)
+        }
+    }
+
+    private def createInstallerTask =
+    {
+        (izPackConfig, scalaVersion, installerJar, installDir, streams) map
+        {
+            (izPackConfig, sv, outputJar, installDir, streams) =>
+
+            val configurator = izPackConfig.getOrElse(error("No IzPack config"))
+
+            val log = streams.log
+
+            val xml = createXML(izPackConfig, installDir, sv, log)
+
+            log.info("Generating IzPack installer")
+            izpackMakeInstaller(xml, outputJar)
+        }
+    }
+
+    private def createXML(configuratorOpt: Option[IzPackConfigurator],
+                          installDir: RichFile, 
+                          scalaVersion: String,
+                          log: Logger): RichFile =
+    {
+        val configurator = configuratorOpt.getOrElse(error("No IzPack config"))
+        val izConfig = configurator.makeConfig(installDir, scalaVersion)
+
+        log.info("Generating configuration XML")
+        izConfig.generateXML(log)
+        log.info("Created " + izConfig.installXMLPath)
+        izConfig.installXMLPath
     }
 
     /**
@@ -104,8 +146,8 @@ object IzPack extends Plugin
      * @param installConfig   the IzPack installer configuration file
      * @param installerJar    where to store the installer jar file
      */
-    def izpackMakeInstaller(installConfig: RichFile, 
-                            installerJar: RichFile): Option[String] =
+    private def izpackMakeInstaller(installConfig: RichFile, 
+                                    installerJar: RichFile): Unit =
     {
         IO.withTemporaryDirectory
         {
@@ -119,7 +161,6 @@ object IzPack extends Plugin
             )
 
             compilerConfig.executeCompiler
-            None
         }
     }
 }

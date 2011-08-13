@@ -52,20 +52,21 @@ import scala.collection.mutable.{ListBuffer,
                                  Map => MutableMap,
                                  HashSet => MutableSet}
 import sbt._
-import Keys.TaskStreams
 
 // ------------------------------------------------------------------------
-//                               Exceptions
+// Traits and Utilities
 // ------------------------------------------------------------------------
 
-private[sbt_izpack] class IzPluginException(msg: String) extends Exception(msg)
+/**
+ * A globber. Exists larger to hide the much richer PathFinder, which conflicts
+ * with RichFile in our implicits.
+ */
+class FileSetGlob(val path: File)
+{
+    def this(s: String) = this(new File(s))
 
-private[sbt_izpack] class MissingFieldException(name: String)
-    extends IzPluginException("Missing required \"" + name + "\" field")
-
-// ------------------------------------------------------------------------
-//                          Traits and Utilities
-// ------------------------------------------------------------------------
+    def **(s: String) = PathFinder(new File(s))
+}
 
 /**
  * Implemented by config-related classes that can take an operating
@@ -308,7 +309,7 @@ trait Section
 }
 
 // ------------------------------------------------------------------------
-//                                Main Config Class
+// Main Config Class
 // ------------------------------------------------------------------------
 
 /**
@@ -318,9 +319,11 @@ trait Section
  *                           actual installation XML file(s)
  * @param streams            SBT TaskStreams object
  */
-abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
+abstract class IzPackConfigBase extends Section
 {
     final val SectionName = "IzPackConfig"
+
+    final val workingInstallDir = Path(".") / "target" / "izpack"
 
     object ParseType extends Enumeration
     {
@@ -434,13 +437,9 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
             case None       => new XMLComment("No " + name + " section")
         }
 
-    def installXMLPath: RichFile = workingInstallDir / "install.xml"
-
-    def generate(streams: TaskStreams): Unit =
+    def generateXML(log: Logger): Unit =
     {
         import Path._
-
-        val log = streams.log
 
         log.info("Creating " + workingInstallDir)
         new File(workingInstallDir.absolutePath).mkdirs()
@@ -451,10 +450,12 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
         log.info("Done.")
     }
 
+    def installXMLPath: RichFile = workingInstallDir / "install.xml"
+
     private def relPath(s: String): RichFile = workingInstallDir / s
 
     // -----------------------------------------------------------------------
-    //                            <info>
+    // <info>
     // -----------------------------------------------------------------------
 
     private case class Author(val name: String, val email: Option[String])
@@ -556,7 +557,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                               <resources>
+    // <resources>
     // ----------------------------------------------------------------------
 
     class Resources extends Section
@@ -643,7 +644,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                               <variables
+    // <variables
     // ----------------------------------------------------------------------
 
     /**
@@ -676,7 +677,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                               <packaging>
+    // <packaging>
     // ----------------------------------------------------------------------
 
     class Packaging extends Section
@@ -734,7 +735,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                               <guiprefs>
+    // <guiprefs>
     // ----------------------------------------------------------------------
 
     class GuiPrefs extends Section
@@ -776,7 +777,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                                <panels>
+    // <panels>
     // ----------------------------------------------------------------------
 
     class Panels extends Section
@@ -888,7 +889,7 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
     }
 
     // ----------------------------------------------------------------------
-    //                                <packs>
+    // <packs>
     // ----------------------------------------------------------------------
 
     class Packs extends Section
@@ -1076,4 +1077,10 @@ abstract class IzPackConfigBase(val workingInstallDir: RichFile) extends Section
         protected def sectionToXML =
             <packs> {individualPacks.map(_.toXML)} </packs>
     }
+}
+
+// Some useful constants
+object Constants
+{
+    val EmptyConfig = new IzPackConfigBase {}
 }
