@@ -8,6 +8,6 @@ organization := "org.clapper"
 
 scalaVersion := "2.8.1"
 
-seq(org.clapper.sbt_izpack.IzPack.izPackSettings: _*)
+seq(org.clapper.sbt.IzPack.izPackSettings: _*)
 
 configGenerator in IzPack := Some(IzPackConfiguration)

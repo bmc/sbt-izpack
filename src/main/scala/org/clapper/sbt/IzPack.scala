@@ -43,17 +43,6 @@ import Defaults._
 import Project.Initialize
 import com.izforge.izpack.compiler.CompilerConfig
 
-abstract class IzPackConfig extends IzPackConfigBase
-
-trait IzPackConfigurator
-{
-    implicit def StringToRichFile(s: String): RichFile = new File(s)
-    implicit def StringToFileSetGlob(s: String) = new FileSetGlob(s)
-
-    def makeConfig(installSourceDir: RichFile, 
-                   scalaVersion: String): IzPackConfig
-}
-
 /**
  * Plugin for SBT (Simple Build Tool) to configure and build an IzPack
  * installer.
@@ -61,7 +50,22 @@ trait IzPackConfigurator
 object IzPack extends Plugin
 {
     // -----------------------------------------------------------------
-    // Plugin Settings
+    // Classes and Traits
+    // -----------------------------------------------------------------
+
+    abstract class IzPackConfig extends IzPackConfigBase
+
+    trait IzPackConfigurator
+    {
+        implicit def StringToRichFile(s: String): RichFile = new File(s)
+        implicit def StringToFileSetGlob(s: String) = new FileSetGlob(s)
+
+        def makeConfig(installSourceDir: RichFile, 
+                       scalaVersion: String): IzPackConfig
+    }
+
+    // -----------------------------------------------------------------
+    // Plugin Settings and Tasks
     // -----------------------------------------------------------------
 
     val IzPack = config("izpack")
@@ -69,12 +73,13 @@ object IzPack extends Plugin
     val configGenerator = 
         SettingKey[Option[IzPackConfigurator]]("config-generator")
     val installerJar = SettingKey[RichFile]("installer-jar")
+    val installDir = SettingKey[File]("install-source",
+                                      "Directory containing auxiliary " +
+                                      "source files.")
+
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
                                         "Create IzPack installer")
-    val installDir = SettingKey[File]("install-source",
-                                          "Directory containing auxiliary " +
-                                          "source files.")
 
     val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 

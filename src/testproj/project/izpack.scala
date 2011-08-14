@@ -1,5 +1,4 @@
-// -*- scala -*-
-import org.clapper.sbt_izpack._
+import org.clapper.sbt.IzPack._
 import java.io.File
 import sbt._
 import grizzled.file.util._

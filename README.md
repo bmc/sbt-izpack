@@ -1,15 +1,24 @@
 IzPack SBT Plugin
 =================
 
-## Introduction
+# Introduction
 
-This project contains an [IzPack][izpack] plugin for the [SBT][sbt]
-build tool.
+This project contains an [IzPack][izpack] plugin for [SBT][sbt] 0.10.1 or
+greater.
 
-[sbt]: http://code.google.com/p/simple-build-tool/
+For SBT 0.7.x, see the [previous version of this plugin][].
+
+[sbt]: https://github.com/harrah/xsbt/
 [izpack]: http://izpack.org/
 
-## Using the Plugin
+[previous version of this plugin]: http://software.clapper.org/sbt-plugins/izpack.html
+
+# WARNING
+
+*This plugin is still being ported from SBT 0.7.x! It has not yet been
+fully tested, and it may not yet be in its final form!*
+
+# Using the Plugin
 
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
@@ -28,18 +37,61 @@ Next, in your main project `build.sbt` file, add:
 
 Now the plug-in is available.
 
-## Using the Plugin
+## Tasks and Settings
+
+The plugin provides these new SBT tasks:
+
+* `izpack:create-xml`: Create the IzPack XML configuration file from the
+  Scala-based one.
+* `izpack:create-installer`: Create the IzPack XML configuration and use it
+  to build the installer jar file.
+
+It also uses these SBT settings:
+
+* `configGenerator in IzPack`: An `Option[IzPackConfigurator]` that defines
+  the Scala-based IzPack configuration. Defaults to `None`.
+* `installerJar in IzPack`: The path to the installer jar file to generate.
+  Defaults to: *project_root*`/target/installer.jar`
+* `installDir in IzPack`: The path to a directory containing additional
+  installer files (e.g., the license file, files to support various IzPack
+  panels, shell scripts, etc.). Defaults to: *project_root*`/src/installer`
+
+## The Scala-based Configuration
+
+To create your IzPack configuration, create a Scala source file in your
+`project` directory (e.g., `IzPack.scala`). In that file, create an object
+that extends the `IzPackConfigurator` trait and provides a `makeConfig`
+method to generate the configuration. That method must return an object of
+type `IzPackConfig`. For instance:
+
+    import org.clapper.sbt.IzPack._
+    import sbt._
+
+    object IzPackConfiguration extends IzPackConfigurator
+    {
+        def makeConfig(installSourceDir: RichFile, scalaVersion: String) =
+        {
+            new IzPackConfig
+            {
+                ...
+            }
+        }
+    }
+
+Now, back in your main `build.sbt` file, wire that object in:
+
+    configGenerator in IzPack := Some(IzPackConfiguration)
 
 Please see the [IzPack Plugin web site][] for detailed usage instructions.
 
-[IzPack Plugin web site]: http://software.clapper.org/sbt-plugins/izpack.html
+[IzPack Plugin web site]: http://software.clapper.org/sbt-izpack/
 
-## License
+# License
 
 This plugin is released under a BSD license, adapted from
 <http://opensource.org/licenses/bsd-license.php>
 
-Copyright &copy; 2010, Brian M. Clapper
+Copyright &copy; 2010-2011, Brian M. Clapper
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -53,9 +105,9 @@ met:
   notice, this list of conditions and the following disclaimer in the
   documentation and/or other materials provided with the distribution.
 
-* Neither the names "clapper.org" nor the names of its contributors may be
-  used to endorse or promote products derived from this software without
-  specific prior written permission.
+* Neither the names "clapper.org", "sbt-izpack", nor the names of any
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
 IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -68,9 +120,3 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-## Copyrights
-
-These plugins are copyright &copy; 2010 Brian M. Clapper.
-
-[SBT][sbt] is copyright &copy; 2008, 2009 Mark Harrah, Nathan Hamblen.

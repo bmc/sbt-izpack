@@ -314,17 +314,14 @@ trait Section
 
 /**
  * Base configuration class.
- *
- * @param workingInstallDir  the directory to use to create the
- *                           actual installation XML file(s)
- * @param streams            SBT TaskStreams object
- */
+*/
 abstract class IzPackConfigBase extends Section
 {
     final val SectionName = "IzPackConfig"
 
-    final val workingInstallDir = (new RichFile(new File(".")) / 
-                                   "target" / "izpack").absolutePath
+    final val workingInstallDir = new RichFile(new File(".")) /
+                                  "target" / "izpack"
+    private final val absInstallDir = workingInstallDir.absolutePath
 
     object ParseType extends Enumeration
     {
@@ -442,8 +439,8 @@ abstract class IzPackConfigBase extends Section
     {
         import Path._
 
-        log.debug("Creating " + workingInstallDir)
-        new File(workingInstallDir).mkdirs()
+        log.debug("Creating " + absInstallDir)
+        workingInstallDir.mkdirs()
         log.debug("Generating " + installXMLPath.absolutePath)
         val xml = toXML
         val prettyPrinter = new XMLPrettyPrinter(256, 2)
