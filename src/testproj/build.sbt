@@ -10,4 +10,4 @@ scalaVersion := "2.8.1"
 
 seq(org.clapper.sbt_izpack.IzPack.izPackSettings: _*)
 
-izPackConfig := Some(IzPackConfiguration)
+configGenerator in IzPack := Some(IzPackConfiguration)

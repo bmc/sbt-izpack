@@ -35,7 +35,7 @@
   ---------------------------------------------------------------------------
 */
 
-package org.clapper.sbt_izpack
+package org.clapper.sbt
 
 import sbt._
 import Keys._
@@ -44,14 +44,6 @@ import Project.Initialize
 import com.izforge.izpack.compiler.CompilerConfig
 
 abstract class IzPackConfig extends IzPackConfigBase
-{
-    private var installDirectory: RichFile = new File(".")
-    private var scalaVersion: String = ""
-
-    IzPack.installDir apply { d => installDirectory = d }
-
-    def InstallSourceDir: RichFile = installDirectory
-}
 
 trait IzPackConfigurator
 {
@@ -115,8 +107,7 @@ object IzPack extends Plugin
 
             val log = streams.log
             val xml = createXML(oGenerator, installDir, sv, log)
-            log.info("Generating IzPack installer")
-            makeInstaller(xml, outputJar)
+            makeInstaller(xml, outputJar, log)
         }
     }
 
@@ -132,7 +123,7 @@ object IzPack extends Plugin
 
                 log.info("Generating configuration XML")
                 izConfig.generateXML(log)
-                log.info("Created " + izConfig.installXMLPath)
+                log.info("Created " + izConfig.installXMLPath.absolutePath)
                 izConfig.installXMLPath
 
             case None =>
@@ -146,16 +137,20 @@ object IzPack extends Plugin
      * @param izPackXML  the IzPack installer XML configuration
      * @param outputJar  where to store the installer jar file
      */
-    private def makeInstaller(izPackXML: RichFile, outputJar: RichFile) =
+    private def makeInstaller(izPackXML: RichFile,
+                              outputJar: RichFile,
+                              log: Logger) =
     {
         IO.withTemporaryDirectory
         {
             baseDir =>
 
+            log.info("Generating IzPack installer")
             val compilerConfig = new CompilerConfig(izPackXML.absolutePath,
                                                     baseDir.getPath, // basedir
                                                     CompilerConfig.STANDARD,
                                                     outputJar.absolutePath)
+            log.info("Created installer in " + outputJar.absolutePath)
             compilerConfig.executeCompiler
         }
     }

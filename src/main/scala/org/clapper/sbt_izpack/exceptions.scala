@@ -35,16 +35,16 @@
   ---------------------------------------------------------------------------
 */
 
-package org.clapper.sbt_izpack
+package org.clapper.sbt
 
 // ------------------------------------------------------------------------
 // Exceptions
 // ------------------------------------------------------------------------
 
-private[sbt_izpack] class IzPluginException(msg: String) extends Exception(msg)
+private[sbt] class IzPluginException(msg: String) extends Exception(msg)
 
-private[sbt_izpack] class MissingFieldException(name: String)
+private[sbt] class MissingFieldException(name: String)
     extends IzPluginException("Missing required \"" + name + "\" field")
 
-private[sbt_izpack] class IzConfigException(msg: String)
+private[sbt] class IzConfigException(msg: String)
     extends IzPluginException(msg)

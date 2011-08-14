@@ -35,7 +35,7 @@
   ---------------------------------------------------------------------------
 */
 
-package org.clapper.sbt_izpack
+package org.clapper.sbt
 
 import scala.xml.{Comment => XMLComment,
                   Elem => XMLElem,
@@ -88,7 +88,7 @@ trait OperatingSystemConstraints
 /**
  * Useful string methods
  */
-private[sbt_izpack] class XString(val str: String)
+private[sbt] class XString(val str: String)
 {
     /**
      * Convenience method to check for a string that's null or empty.
@@ -102,7 +102,7 @@ private[sbt_izpack] class XString(val str: String)
     def toOption = if (isEmpty) None else Some(str)
 }
 
-private[sbt_izpack] class XElem(val elem: XMLElem)
+private[sbt] class XElem(val elem: XMLElem)
 {
     private def doAdd(name: String, value: String): XElem =
         new XElem(elem %
@@ -140,7 +140,7 @@ private[sbt_izpack] class XElem(val elem: XMLElem)
     }
 }
 
-private[sbt_izpack] object Implicits
+private[sbt] object Implicits
 {
     // Implicits
 
@@ -323,7 +323,8 @@ abstract class IzPackConfigBase extends Section
 {
     final val SectionName = "IzPackConfig"
 
-    final val workingInstallDir = Path(".") / "target" / "izpack"
+    final val workingInstallDir = (new RichFile(new File(".")) / 
+                                   "target" / "izpack").absolutePath
 
     object ParseType extends Enumeration
     {
@@ -441,9 +442,9 @@ abstract class IzPackConfigBase extends Section
     {
         import Path._
 
-        log.info("Creating " + workingInstallDir)
-        new File(workingInstallDir.absolutePath).mkdirs()
-        log.info("Generating " + installXMLPath)
+        log.debug("Creating " + workingInstallDir)
+        new File(workingInstallDir).mkdirs()
+        log.debug("Generating " + installXMLPath.absolutePath)
         val xml = toXML
         val prettyPrinter = new XMLPrettyPrinter(256, 2)
         writeStringToFile(installXMLPath, prettyPrinter.format(xml))

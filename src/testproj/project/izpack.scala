@@ -137,19 +137,16 @@ object IzPackConfiguration extends IzPackConfigurator
                     required = true
                     preselected = true
 
-                    new SingleFile("target" / "doc" / "LICENSE.html",
-                                   "LICENSE.html")
+                    new SingleFile(installSourceDir / "license.html",
+                                   "license.html")
 
-                    new SingleFile("target" / "foo.jar",
-                                   "$INSTALL_PATH/lib/foo.jar")
-
-                    new SingleFile("src" / "main" / "install" / "foo.sh",
+                    new SingleFile(installSourceDir / "foo.sh",
                                    "$INSTALL_PATH/bin/foo.sh")
                     {
                         onlyFor(Unix, MacOS)
                     }
 
-                    new SingleFile("src" / "main" / "install" / "foo.bat",
+                    new SingleFile(installSourceDir / "foo.bat",
                                    "$INSTALL_PATH/bin/foo.bat")
                     {
                         onlyFor(Windows)
