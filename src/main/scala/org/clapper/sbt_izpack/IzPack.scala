@@ -74,7 +74,8 @@ object IzPack extends Plugin
 
     val IzPack = config("izpack")
     //val izPackConfig = SettingKey[IzPackConfig]("izpack-config")
-    val izPackConfig = SettingKey[Option[IzPackConfigurator]]("izpack-config")
+    val configGenerator = 
+        SettingKey[Option[IzPackConfigurator]]("config-generator")
     val installerJar = SettingKey[RichFile]("installer-jar")
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
@@ -88,9 +89,6 @@ object IzPack extends Plugin
         installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
         installDir <<= baseDirectory(_ / "src" / "installer"),
 
-        // Use externalDependencyClasspath setting. 
-        // See https://github.com/harrah/xsbt/wiki/Classpaths
-
         createXML <<= createXMLTask,
         createInstaller <<= createInstallerTask
     ))
@@ -101,65 +99,63 @@ object IzPack extends Plugin
 
     private def createXMLTask =
     {
-        (izPackConfig, scalaVersion, installerJar, installDir, streams) map
+        (configGenerator, scalaVersion, installerJar, installDir, streams) map
         {
-            (izPackConfig, sv, outputJar, installDir, streams) =>
+            (oGenerator, sv, outputJar, installDir, streams) =>
 
-            createXML(izPackConfig, installDir, sv, streams.log)
+            createXML(oGenerator, installDir, sv, streams.log)
         }
     }
 
     private def createInstallerTask =
     {
-        (izPackConfig, scalaVersion, installerJar, installDir, streams) map
+        (configGenerator, scalaVersion, installerJar, installDir, streams) map
         {
-            (izPackConfig, sv, outputJar, installDir, streams) =>
-
-            val configurator = izPackConfig.getOrElse(error("No IzPack config"))
+            (oGenerator, sv, outputJar, installDir, streams) =>
 
             val log = streams.log
-
-            val xml = createXML(izPackConfig, installDir, sv, log)
-
+            val xml = createXML(oGenerator, installDir, sv, log)
             log.info("Generating IzPack installer")
-            izpackMakeInstaller(xml, outputJar)
+            makeInstaller(xml, outputJar)
         }
     }
 
-    private def createXML(configuratorOpt: Option[IzPackConfigurator],
+    private def createXML(oGenerator: Option[IzPackConfigurator],
                           installDir: RichFile, 
                           scalaVersion: String,
                           log: Logger): RichFile =
     {
-        val configurator = configuratorOpt.getOrElse(error("No IzPack config"))
-        val izConfig = configurator.makeConfig(installDir, scalaVersion)
+        oGenerator match
+        {
+            case Some(configurator) =>
+                val izConfig = configurator.makeConfig(installDir, scalaVersion)
 
-        log.info("Generating configuration XML")
-        izConfig.generateXML(log)
-        log.info("Created " + izConfig.installXMLPath)
-        izConfig.installXMLPath
+                log.info("Generating configuration XML")
+                izConfig.generateXML(log)
+                log.info("Created " + izConfig.installXMLPath)
+                izConfig.installXMLPath
+
+            case None =>
+                error("No IzPack config")
+        }
     }
 
     /**
      * Build the actual installer jar.
      *
-     * @param installConfig   the IzPack installer configuration file
-     * @param installerJar    where to store the installer jar file
+     * @param izPackXML  the IzPack installer XML configuration
+     * @param outputJar  where to store the installer jar file
      */
-    private def izpackMakeInstaller(installConfig: RichFile, 
-                                    installerJar: RichFile): Unit =
+    private def makeInstaller(izPackXML: RichFile, outputJar: RichFile) =
     {
         IO.withTemporaryDirectory
         {
             baseDir =>
 
-            val compilerConfig = new CompilerConfig(
-                installConfig.absolutePath,
-                baseDir.getPath, // basedir
-                CompilerConfig.STANDARD,
-                installerJar.absolutePath
-            )
-
+            val compilerConfig = new CompilerConfig(izPackXML.absolutePath,
+                                                    baseDir.getPath, // basedir
+                                                    CompilerConfig.STANDARD,
+                                                    outputJar.absolutePath)
             compilerConfig.executeCompiler
         }
     }

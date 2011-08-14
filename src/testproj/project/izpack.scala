@@ -120,10 +120,10 @@ object IzPackConfiguration extends IzPackConfigurator
                 new Panel("FinishPanel")
                 new Panel("DummyPanel")
                 {
-    //                val scalaVersionDir = "scala-" + buildScalaVersion
+                    val scalaVersionDir = "scala-" + scalaVersion
 
-    //                jar = "project" / "boot" / scalaVersionDir / "lib" /
-    //                "scala-library.jar"
+                    jar = "project" / "boot" / scalaVersionDir / "lib" /
+                          "scala-library.jar"
 
                     new Action("postvalidate", "PostValidationAction")
                     new Validator("org.clapper.izpack.TestValidator")
