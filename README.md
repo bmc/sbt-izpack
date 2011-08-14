@@ -15,8 +15,8 @@ For SBT 0.7.x, see the [previous version of this plugin][].
 
 # WARNING
 
-*This plugin is still being ported from SBT 0.7.x! It has not yet been
-fully tested, and it may not yet be in its final form!*
+**This plugin is still being ported from SBT 0.7.x! It has not yet been
+fully tested, and it may not yet be in its final form!**
 
 # Using the Plugin
 
