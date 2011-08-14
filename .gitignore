@@ -1,7 +1,9 @@
 lib_managed/
 project/boot/
+project/plugins/
 project/build/target/
 src/testproj/project/boot/
+src/testproj/project/plugins/
 src/testproj/project/build/target/
 src/testproj/project/plugins/lib_managed/
 src/testproj/project/plugins/src_managed/
