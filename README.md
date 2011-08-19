@@ -18,6 +18,8 @@ For SBT 0.7.x, see the [previous version of this plugin][].
 **This plugin is still being ported from SBT 0.7.x! It has not yet been
 fully tested, and it may not yet be in its final form!**
 
+**NOT SUPPORTED: `conditions`, `dynamicvariables`, `variables` **
+
 # Using the Plugin
 
 First, within your SBT project, create `project/plugins/build.sbt` (if it
@@ -106,7 +108,7 @@ met:
   documentation and/or other materials provided with the distribution.
 
 * Neither the names "clapper.org", "sbt-izpack", nor the names of any
-  contributors may be used to endorse or promote products derived from this
+  contributor may be used to endorse or promote products derived from this
   software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS

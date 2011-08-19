@@ -17,7 +17,7 @@
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
 
-  * Neither the names "clapper.org", "Era", nor the names of its
+  * Neither the names "clapper.org", "sbt-izpack", nor the names of any
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
 
@@ -35,13 +35,20 @@
   ---------------------------------------------------------------------------
 */
 
-package org.clapper.sbt
+package org.clapper.sbt.izpack
 
 import sbt._
 import Keys._
 import Defaults._
 import Project.Initialize
 import com.izforge.izpack.compiler.CompilerConfig
+import scala.io.Source
+import java.io.File
+
+case class Metadata(installSource: RichFile,
+                    baseDirectory: RichFile,
+                    scalaVersion: String,
+                    private[sbt] val updateReport: UpdateReport)
 
 /**
  * Plugin for SBT (Simple Build Tool) to configure and build an IzPack
@@ -53,87 +60,115 @@ object IzPack extends Plugin
     // Classes and Traits
     // -----------------------------------------------------------------
 
-    abstract class IzPackConfig extends IzPackConfigBase
-
-    trait IzPackConfigurator
-    {
-        implicit def StringToRichFile(s: String): RichFile = new File(s)
-        implicit def StringToFileSetGlob(s: String) = new FileSetGlob(s)
-
-        def makeConfig(installSourceDir: RichFile, 
-                       scalaVersion: String): IzPackConfig
-    }
-
     // -----------------------------------------------------------------
     // Plugin Settings and Tasks
     // -----------------------------------------------------------------
 
     val IzPack = config("izpack")
     //val izPackConfig = SettingKey[IzPackConfig]("izpack-config")
-    val configGenerator = 
-        SettingKey[Option[IzPackConfigurator]]("config-generator")
+    val configFile = SettingKey[File]("config-file")
     val installerJar = SettingKey[RichFile]("installer-jar")
-    val installDir = SettingKey[File]("install-source",
-                                      "Directory containing auxiliary " +
-                                      "source files.")
+    val installSource = SettingKey[File]("install-source",
+                                         "Directory containing auxiliary " +
+                                         "source files.")
+    val installXML = SettingKey[File]("install-xml",
+                                       "Path to the generated XML file.")
 
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
                                         "Create IzPack installer")
 
+    val clean = TaskKey[Unit]("clean", "Remove target files.")
+    val showDeps = TaskKey[Unit]("show-deps")
+
     val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 
         installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
-        installDir <<= baseDirectory(_ / "src" / "installer"),
+        installSource <<= baseDirectory(_ / "src" / "izpack"),
+        installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
+        configFile <<= installSource(_ / "izpack.yml"),
 
         createXML <<= createXMLTask,
-        createInstaller <<= createInstallerTask
+        createInstaller <<= createInstallerTask,
+        showDeps <<= (managedClasspath in Runtime) map showDependencies
+    ))
+    inConfig(Compile)(Seq(
+        // Hook our clean into the global one.
+        clean in Global <<= (clean in IzPack).identity
     ))
 
     // -----------------------------------------------------------------
     // Methods
     // -----------------------------------------------------------------
 
+    private def cleanTask: Initialize[Task[Unit]] =
+    {
+        (installXML, streams) map 
+        {
+            (installXML, streams) =>
+
+            if (installXML.exists)
+            {
+                streams.log.debug("Deleting \"%s\"" format installXML)
+                installXML.delete
+            }
+        }
+    }
+
+    private def showDependencies(classpath: Classpath): Unit =
+    {
+        for (cp <- classpath)
+            println(cp)
+    }
+
     private def createXMLTask =
     {
-        (configGenerator, scalaVersion, installerJar, installDir, streams) map
+        (configFile, scalaVersion, baseDirectory, installSource, installXML,
+         update, streams) map
         {
-            (oGenerator, sv, outputJar, installDir, streams) =>
+            (configFile, sv, baseDir, installSource, installXML, updateReport,
+             streams) =>
 
-            createXML(oGenerator, installDir, sv, streams.log)
+            createXML(configFile, baseDir, installSource, installXML, sv,
+                      updateReport, streams.log)
         }
     }
 
     private def createInstallerTask =
     {
-        (configGenerator, scalaVersion, installerJar, installDir, streams) map
+        (configFile, scalaVersion, installerJar, baseDirectory, installSource,
+         installXML, update, streams) map
         {
-            (oGenerator, sv, outputJar, installDir, streams) =>
+            (configFile, sv, outputJar, baseDirectory, installSource,
+             installXML, updateReport, streams) =>
 
             val log = streams.log
-            val xml = createXML(oGenerator, installDir, sv, log)
+            val xml = createXML(configFile, baseDirectory, installSource,
+                                installXML, sv, updateReport, log)
             makeInstaller(xml, outputJar, log)
         }
     }
 
-    private def createXML(oGenerator: Option[IzPackConfigurator],
-                          installDir: RichFile, 
+    private def createXML(configFile: File,
+                          baseDirectory: RichFile,
+                          installSource: RichFile,
+                          installXML: RichFile,
                           scalaVersion: String,
+                          updateReport: UpdateReport,
                           log: Logger): RichFile =
     {
-        oGenerator match
-        {
-            case Some(configurator) =>
-                val izConfig = configurator.makeConfig(installDir, scalaVersion)
+        val sbtData = new SBTData(installSource, baseDirectory, scalaVersion,
+                                  updateReport)
+        val parser = new IzPackYamlConfigParser(sbtData, log)
+        val izConfig = parser.parse(Source.fromFile(configFile))
 
-                log.info("Generating configuration XML")
-                izConfig.generateXML(log)
-                log.info("Created " + izConfig.installXMLPath.absolutePath)
-                izConfig.installXMLPath
+        // Create the XML.
 
-            case None =>
-                error("No IzPack config")
-        }
+        val path = installXML.absolutePath
+        log.info("Generating IzPack XML \"%s\"" format path)
+        izConfig.generateXML(installXML.asFile, log)
+        log.info("Created " + path)
+        installXML
     }
 
     /**

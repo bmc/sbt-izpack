@@ -8,6 +8,10 @@ organization := "org.clapper"
 
 scalaVersion := "2.8.1"
 
-seq(org.clapper.sbt.IzPack.izPackSettings: _*)
+libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.0.7"
 
-configGenerator in IzPack := Some(IzPackConfiguration)
+seq(org.clapper.sbt.izpack.IzPack.izPackSettings: _*)
+
+configFile in IzPack <<= baseDirectory(_ / "src" / "install.yml")
+
+installSource in IzPack <<= baseDirectory(_ / "src" / "installer")

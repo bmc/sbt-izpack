@@ -11,7 +11,7 @@
 
 name := "sbt-izpack"
 
-version := "0.4"
+version := "0.1"
 
 sbtPlugin := true
 
@@ -42,6 +42,7 @@ libraryDependencies <<= (sbtVersion, scalaVersion, libraryDependencies) { (sbtv,
 // External deps
 libraryDependencies ++= Seq(
     "org.codehaus.izpack" % "izpack-standalone-compiler" % "4.3.4" % "compile",
+    "org.yaml" % "snakeyaml" % "1.9",
     "org.clapper" %% "grizzled-scala" % "1.0.7",
     "org.scala-lang" % "scala-compiler" % "2.8.1"
 )
@@ -60,3 +61,6 @@ publishMavenStyle := true
 credentials += Credentials(Path.userHome / "src" / "mystuff" / "scala" /
                            "nexus.scala-tools.org.properties")
 
+publishArtifact in (Compile, packageDoc) := false
+
+publishArtifact in (Compile, packageSrc) := false

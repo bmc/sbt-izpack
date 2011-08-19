@@ -9,4 +9,5 @@ src/testproj/project/plugins/lib_managed/
 src/testproj/project/plugins/src_managed/
 src/testproj/project/plugins/target/
 src/testproj/target/
+src/testproj/.history
 target/
