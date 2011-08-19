@@ -95,4 +95,7 @@ packs:
     singleFile:
       src: $baseDirectory/src/install.yml
       target: $INSTALL_PATH/lib
-    
+    fileset:
+      includes: $dependencies
+      targetDirectory: $INSTALL_PATH/lib
+

@@ -84,49 +84,19 @@ case class SBTData(installSource: RichFile,
                    updateReport: UpdateReport)
 
 /**
- * Various SBT-related filters, placed in a separate trait for readability.
- */
-/*
-trait Filters
-{
-    private[sbt] val metadata: Metadata
-
-    def artifactJar(name: NameFilter = "",
-                    `type`: NameFilter = "",
-                    extension: NameFilter = "",
-                    classifier: NameFilter = ""): RichFile =
-    {
-        val res = artifactFilter(name, `type`, extension, classifier)
-        println(res)
-        new RichFile(new File ("."))
-    }
-
-    def dependencyJar(name: NameFilter = ""): RichFile =
-    {
-        val res = configurationFilter(name = "compile") &&
-                  artifactFilter(`type` = "jar") &&
-                  moduleFilter(name = name)
-        println(res)
-        new RichFile(new File ("."))
-    }
-}
-*/
-
-/**
  * Implemented by config-related classes that can take an operating
  * system constraint. Assumes that the resulting XML can contain
  * an `<os family="osname"/>` element.
  */
-trait OperatingSystemConstraints extends Util
+trait OperatingSystemConstraints extends Util with Constants
 {
     private val Legal = Set("windows", "macosx", "unix")
 
     private var operatingSystemsList: List[String] = Nil
-    private val Delims = """[\s,]""".r
 
     def setOs(osNames: String) =
     {
-        val names = Delims.split(osNames).toList
+        val names = ListDelims.split(osNames).toList
         val bad = names.filter{! Legal(_)}
         if (bad.length > 0)
             izError("Bad operating system name(s): %s" format 
@@ -355,17 +325,25 @@ private[izpack] trait IzPackSection extends OptionKeys
     }
 }
 
+private[izpack] trait Constants
+{
+    val ListDelims = """[\s,]""".r
+}
+
 class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
 {
-    private class ConfigTemplate(deref: (String) => Option[String])
-    extends UnixShellStringTemplate(deref, "[A-Za-z0-9][A-Za-z0-9_]+", true)
+    private class ConfigTemplate(variables: Map[String, String])
+    extends UnixShellStringTemplate(Dereferencer.dereference,
+                                    "[A-Za-z0-9][A-Za-z0-9_]+", true)
     {
-        override def substitute(v: String): String =
-            super.substitute(v).replace("@@@", "$")
+        override def substitute(name: String): String =
+        {
+            super.substitute(name).replace("@@@", "$")
+        }
     }
 
     private val basePath = sbtData.baseDirectory.absolutePath
-    private val Vars = Map[String, String](
+    private val Variables = Map[String, String](
         "installSource"   -> sbtData.installSource.absolutePath,
         "baseDirectory"   -> basePath,
         "scalaVersion"    -> sbtData.scalaVersion,
@@ -376,6 +354,22 @@ class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
         "INSTALL_PATH"   -> "@@@INSTALL_PATH"
     )
 
+    object Dereferencer
+    {
+        val deps = sbtData.updateReport.allFiles.map(_.getPath).mkString(", ")
+        def dereference(name: String): Option[String] =
+        {
+            name match
+            {
+                case "dependencies" =>
+                    Some(deps)
+                case _ =>
+                    Some(Variables.getOrElse(
+                        name, izError("No such variable: " + name))
+                     )
+            }
+        }
+    }
 
     def parse(source: Source): IzPackYamlConfig =
     {
@@ -415,7 +409,7 @@ class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
 
     private def preFilter(lines: List[String]): List[String] =
     {
-        val template = new ConfigTemplate({ v => Vars.get(v) })
+        val template = new ConfigTemplate(Variables)
         @tailrec def sub(pre: List[String], post: List[String]): List[String] =
         {
             pre match
@@ -1055,7 +1049,11 @@ with Util with OptionStrings
             {operatingSystemsToXML}
             {depends.map(s => <depends packname={s}/>)}
             {files.map(_.toXML)}
-            {filesets.map(_.toXML)}
+            {
+                for {fs <- filesets
+                     fileXML <- fs.toXML}
+                    yield fileXML
+            }
             {parsables.map(_.toXML)}
             {executables.map(_.toXML)}
             {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
@@ -1137,7 +1135,7 @@ private[izpack] class FileOrDirectory extends OneFile with Util
 }
 
 private[izpack] class FileSet extends OperatingSystemConstraints
-with Util with OptionStrings with Overridable
+with Util with OptionStrings with Overridable with Constants
 {
     private var included = MutableSet[String]()
     private var excluded = MutableSet[String]()
@@ -1146,18 +1144,20 @@ with Util with OptionStrings with Overridable
     @BeanProperty var caseSensitive: Boolean = false
     @BeanProperty var defaultExcludes: Boolean = false
 
-    def setIncludes(pattern: String): Unit =
-        included ++= FileUtil.eglob(pattern).toSet
-    def setExcludes(pattern: String): Unit =
-        excluded ++= FileUtil.eglob(pattern).toSet
+    def setIncludes(patternList: String): Unit =
+        for (pattern <- ListDelims.split(patternList))
+            included ++= FileUtil.eglob(pattern).toSet
+    def setExcludes(patternList: String): Unit =
+        for (pattern <- ListDelims.split(patternList))
+            excluded ++= FileUtil.eglob(pattern).toSet
+
     def setTargetDirectory(path: String): Unit = setOption(TargetDir, path)
     def setCondition(s: String): Unit = setOption(Condition, s)
 
     def toXML =
     {
         val paths = included &~ excluded  // set difference
-        val nodes = paths.map(fileToXML _)
-        XMLNodeSeq.fromSeq(nodes.toList)
+        paths.map(fileToXML _).toSeq
     }
 
     private def fileToXML(path: String) =
