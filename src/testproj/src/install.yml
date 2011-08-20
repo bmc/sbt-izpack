@@ -12,6 +12,7 @@ customXML:
     <variables>
       <variable name="Foo.theBarMan" value="$INSTALL_PATH"/>
     </variables>
+  - <foo>$libs</foo>
 
 languages:
   - eng
@@ -97,5 +98,7 @@ packs:
       target: $INSTALL_PATH/lib
     fileset:
       includes: $dependencies
+      regexExcludes: dispatch, junit, jline, commons, apache, knockoff
+      regexExcludes: posterous
       targetDirectory: $INSTALL_PATH/lib
 

@@ -73,6 +73,12 @@ object IzPack extends Plugin
                                          "source files.")
     val installXML = SettingKey[File]("install-xml",
                                        "Path to the generated XML file.")
+    val variables = SettingKey[Seq[Tuple2[String, String]]](
+        "variables", "Additional variables for substitution in the config"
+    )
+    val settingsVariables = SettingKey[Seq[Tuple2[String, String]]](
+        "-predefined-variables", "Best not to mess with this one"
+    )
 
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
@@ -87,6 +93,9 @@ object IzPack extends Plugin
         installSource <<= baseDirectory(_ / "src" / "izpack"),
         installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
         configFile <<= installSource(_ / "izpack.yml"),
+        variables := Seq.empty[Tuple2[String, String]],
+        settingsVariables <<= Seq.empty[Tuple2[String, String]] +
+                              baseDirectory( bd => ("baseDirectory", bd.absolutePath)),
 
         createXML <<= createXMLTask,
         createInstaller <<= createInstallerTask,
@@ -115,50 +124,40 @@ object IzPack extends Plugin
         }
     }
 
-    private def showDependencies(classpath: Classpath): Unit =
-    {
-        for (cp <- classpath)
-            println(cp)
-    }
-
     private def createXMLTask =
     {
-        (configFile, scalaVersion, baseDirectory, installSource, installXML,
-         update, streams) map
+        (configFile, installXML, settingsVariables, variables, streams) map
         {
-            (configFile, sv, baseDir, installSource, installXML, updateReport,
-             streams) =>
+            (configFile, installXML, settingsVariables, variables, streams) =>
 
-            createXML(configFile, baseDir, installSource, installXML, sv,
-                      updateReport, streams.log)
+            createXML(configFile, settingsVariables, variables, installXML,
+                      streams.log)
         }
     }
 
     private def createInstallerTask =
     {
-        (configFile, scalaVersion, installerJar, baseDirectory, installSource,
-         installXML, update, streams) map
+        (configFile, installerJar, installXML, settingsVariables, variables,
+         streams) map
         {
-            (configFile, sv, outputJar, baseDirectory, installSource,
-             installXML, updateReport, streams) =>
+            (configFile, outputJar, settingsVariables, variables, streams) =>
 
             val log = streams.log
-            val xml = createXML(configFile, baseDirectory, installSource,
-                                installXML, sv, updateReport, log)
+            val xml = createXML(configFile, variables, settingsVariables,
+                                installXML, log)
             makeInstaller(xml, outputJar, log)
         }
     }
 
     private def createXML(configFile: File,
-                          baseDirectory: RichFile,
-                          installSource: RichFile,
+                          variables: Seq[Tuple2[String, String]],
+                          settingsVariables: Seq[Tuple2[String, String]],
                           installXML: RichFile,
-                          scalaVersion: String,
-                          updateReport: UpdateReport,
                           log: Logger): RichFile =
     {
-        val sbtData = new SBTData(installSource, baseDirectory, scalaVersion,
-                                  updateReport)
+        val allVariables = Map.empty[String, String] ++
+                           (variables ++ settingsVariables)
+        val sbtData = new SBTData(variables)
         val parser = new IzPackYamlConfigParser(sbtData, log)
         val izConfig = parser.parse(Source.fromFile(configFile))
 

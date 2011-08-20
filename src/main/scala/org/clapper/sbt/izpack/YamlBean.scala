@@ -59,6 +59,7 @@ import scala.collection.mutable.{ListBuffer,
                                  Set => MutableSet}
 import scala.collection.generic.Growable
 import scala.io.Source
+import scala.util.matching.Regex
 import org.yaml.snakeyaml.{TypeDescription, Yaml}
 import org.yaml.snakeyaml.constructor.{AbstractConstruct, Constructor}
 import org.yaml.snakeyaml.nodes.{Node => YamlNode, Tag => YamlTag}
@@ -68,7 +69,7 @@ import java.util.{ArrayList => JArrayList,
                   List => JList,
                   Map => JMap,
                   HashMap => JHashMap}
-import sbt.{Logger, RichFile, Path, PathFinder, UpdateReport}
+import sbt.{Logger, ModuleID, RichFile, Path, PathFinder, UpdateReport}
 import grizzled.string.template.UnixShellStringTemplate
 import grizzled.string.{util => StringUtil}
 import grizzled.file.{util => FileUtil}
@@ -78,10 +79,7 @@ object MissingSection
     def apply(name: String) = new XMLComment("No " + name + " section.")
 }
 
-case class SBTData(installSource: RichFile,
-                   baseDirectory: RichFile,
-                   scalaVersion: String,
-                   updateReport: UpdateReport)
+case class SBTData(variables: Map[String, String])
 
 /**
  * Implemented by config-related classes that can take an operating
@@ -327,13 +325,13 @@ private[izpack] trait IzPackSection extends OptionKeys
 
 private[izpack] trait Constants
 {
-    val ListDelims = """[\s,]""".r
+    val ListDelims = """[\s,]+""".r
 }
 
 class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
 {
     private class ConfigTemplate(variables: Map[String, String])
-    extends UnixShellStringTemplate(Dereferencer.dereference,
+    extends UnixShellStringTemplate({n => Variables.get(n) },
                                     "[A-Za-z0-9][A-Za-z0-9_]+", true)
     {
         override def substitute(name: String): String =
@@ -342,34 +340,11 @@ class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
         }
     }
 
-    private val basePath = sbtData.baseDirectory.absolutePath
     private val Variables = Map[String, String](
-        "installSource"   -> sbtData.installSource.absolutePath,
-        "baseDirectory"   -> basePath,
-        "scalaVersion"    -> sbtData.scalaVersion,
-        "sourceDirectory" -> FileUtil.joinPath(basePath, "src"),
-
         // predefined IzPack variables to pass through
 
-        "INSTALL_PATH"   -> "@@@INSTALL_PATH"
-    )
-
-    object Dereferencer
-    {
-        val deps = sbtData.updateReport.allFiles.map(_.getPath).mkString(", ")
-        def dereference(name: String): Option[String] =
-        {
-            name match
-            {
-                case "dependencies" =>
-                    Some(deps)
-                case _ =>
-                    Some(Variables.getOrElse(
-                        name, izError("No such variable: " + name))
-                     )
-            }
-        }
-    }
+        "INSTALL_PATH"        -> "@@@INSTALL_PATH"
+    ) ++ sbtData.variables
 
     def parse(source: Source): IzPackYamlConfig =
     {
@@ -714,11 +689,7 @@ private[izpack] class Resources extends IzPackSection
     {
         <resources>
           {resources.map(_.toXML)}
-          {
-              for {nodes <- installDirectories.map(_.toXML)
-                   node <- nodes}
-                  yield node
-          }
+          {installDirectories.map(_.toXML).flatten}
         </resources>
     }
 }
@@ -1049,11 +1020,7 @@ with Util with OptionStrings
             {operatingSystemsToXML}
             {depends.map(s => <depends packname={s}/>)}
             {files.map(_.toXML)}
-            {
-                for {fs <- filesets
-                     fileXML <- fs.toXML}
-                    yield fileXML
-            }
+            {filesets.map(_.toXML).flatten}
             {parsables.map(_.toXML)}
             {executables.map(_.toXML)}
             {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
@@ -1137,8 +1104,10 @@ private[izpack] class FileOrDirectory extends OneFile with Util
 private[izpack] class FileSet extends OperatingSystemConstraints
 with Util with OptionStrings with Overridable with Constants
 {
-    private var included = MutableSet[String]()
-    private var excluded = MutableSet[String]()
+    private var includes = MutableSet[String]()
+    private var excludes = MutableSet[String]()
+    // Purely for matching
+    private var regexExcludes = MutableSet[Regex]()
 
     @BeanProperty var unpack: Boolean = false
     @BeanProperty var caseSensitive: Boolean = false
@@ -1146,18 +1115,34 @@ with Util with OptionStrings with Overridable with Constants
 
     def setIncludes(patternList: String): Unit =
         for (pattern <- ListDelims.split(patternList))
-            included ++= FileUtil.eglob(pattern).toSet
+            includes ++= FileUtil.eglob(pattern).toSet
     def setExcludes(patternList: String): Unit =
         for (pattern <- ListDelims.split(patternList))
-            excluded ++= FileUtil.eglob(pattern).toSet
+            excludes ++= FileUtil.eglob(pattern).toSet
+    def setRegexExcludes(regexList: String): Unit =
+        for (reString <- ListDelims.split(regexList))
+            regexExcludes += reString.r
 
     def setTargetDirectory(path: String): Unit = setOption(TargetDir, path)
     def setCondition(s: String): Unit = setOption(Condition, s)
 
     def toXML =
     {
-        val paths = included &~ excluded  // set difference
-        paths.map(fileToXML _).toSeq
+        /* &~ is set difference */
+        val paths = filterRegexExcludes((includes &~ excludes).toSet)
+        // XML Node objects appear to hash weirdly, so convert the set
+        // to a list, so we don't lose elements in the mapping.
+        paths.toList.map(fileToXML(_))
+    }
+
+    private def filterRegexExcludes(paths: Set[String]) =
+    {
+        paths.filter
+        {
+            path => 
+
+            ! regexExcludes.exists {re => re.findFirstIn(path) != None}
+        }
     }
 
     private def fileToXML(path: String) =
