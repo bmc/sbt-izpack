@@ -178,7 +178,10 @@ private[izpack] trait OptionStrings extends OptionKeys
         options.get(name).map(s => true).getOrElse(false)
 
     protected def setOption(name: String, value: String) =
-        options += name -> value.toOption
+    {
+        if ((value != null) && (value.trim.length > 0))
+            options += name -> value.toOption
+    }
 
     protected def getOption(name: String): Option[String] =
         options.getOrElse(name, None)
@@ -1114,14 +1117,24 @@ with Util with OptionStrings with Overridable with Constants
     @BeanProperty var defaultExcludes: Boolean = false
 
     def setIncludes(patternList: String): Unit =
-        for (pattern <- ListDelims.split(patternList))
-            includes ++= FileUtil.eglob(pattern).toSet
+    {
+        if ((patternList != null) && (patternList.trim.length > 0))
+            for (pattern <- ListDelims.split(patternList))
+                includes ++= FileUtil.eglob(pattern).toSet
+    }
+
     def setExcludes(patternList: String): Unit =
-        for (pattern <- ListDelims.split(patternList))
-            excludes ++= FileUtil.eglob(pattern).toSet
+    {
+        if ((patternList != null) && (patternList.trim.length > 0))
+            for (pattern <- ListDelims.split(patternList))
+                excludes ++= FileUtil.eglob(pattern).toSet
+    }
     def setRegexExcludes(regexList: String): Unit =
-        for (reString <- ListDelims.split(regexList))
-            regexExcludes += reString.r
+    {
+        if ((regexList != null) && (regexList.trim.length > 0))
+            for (reString <- ListDelims.split(regexList))
+                regexExcludes += reString.r
+    }
 
     def setTargetDirectory(path: String): Unit = setOption(TargetDir, path)
     def setCondition(s: String): Unit = setOption(Condition, s)
