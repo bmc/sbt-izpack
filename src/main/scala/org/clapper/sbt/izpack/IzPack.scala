@@ -77,25 +77,32 @@ object IzPack extends Plugin
     val variables = SettingKey[Seq[Tuple2[String, String]]](
         "variables", "Additional variables for substitution in the config"
     )
+    val tempDirectory = SettingKey[File](
+        "temp-dir", "Where to generate temporary installer files."
+    )
 
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
                                         "Create IzPack installer")
 
     val clean = TaskKey[Unit]("clean", "Remove target files.")
-    val captureSettings = TaskKey[Map[String,String]]("capture-settings")
+    val captureSettings = TaskKey[Map[String,String]](
+        "-capture-settings",
+        "Don't mess with this. Seriously. If you do, you'll break the plugin."
+    )
 
+    val mySettings = Seq(variables in Global := Nil)
     val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 
         installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
         installSource <<= baseDirectory(_ / "src" / "izpack"),
         installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
         configFile <<= installSource(_ / "izpack.yml"),
-        variables := Seq.empty[Tuple2[String, String]],
+        variables := Nil,
         captureSettings <<= captureSettingsTask,
         createXML <<= createXMLTask,
         createInstaller <<= createInstallerTask
-    ))
+    )) ++ 
     inConfig(Compile)(Seq(
         // Hook our clean into the global one.
         clean in Global <<= (clean in IzPack).identity
@@ -105,6 +112,9 @@ object IzPack extends Plugin
     // Methods
     // -----------------------------------------------------------------
 
+    private def allDependencies(updateReport: UpdateReport) =
+        updateReport.allFiles.map(_.absolutePath).mkString(", ")
+    
     private def captureSettingsTask =
     {
         (baseDirectory, installSource, update, libraryDependencies) map
@@ -149,7 +159,9 @@ object IzPack extends Plugin
             Map.empty[String,String] ++ Seq(
                 "baseDirectory"       -> base.absolutePath,
                 "installSource"       -> installSource.absolutePath,
-                "allDependencies"     -> allDeps.mkString(", "),
+                "allDependencies"     -> updateReport.allFiles.
+                                                      map{_.absolutePath}.
+                                                      mkString(", "),
                 "libraryDependencies" -> libDepFiles.mkString(", ")
             )
         }

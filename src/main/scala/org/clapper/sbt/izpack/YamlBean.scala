@@ -250,9 +250,9 @@ private[izpack] trait IzPackSection extends OptionKeys
      * Various setters and getters for the XML, including bean methods,
      * for the YAML parser.
      */
-    def setCustomXML(xml: JList[String]): Unit =
+    def setCustomXML(xml: JArrayList[String]): Unit =
         customXML ++= xml.map {x => XML.loadString(x)}
-    def getCustomXML: JList[String] = null
+    def getCustomXML: JArrayList[String] = null
 
     /**
      * Generate the section's XML. Calls out to `sectionToXML`

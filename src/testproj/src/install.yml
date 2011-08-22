@@ -1,5 +1,5 @@
 customXML:
-  - >
+  - |
     <conditions>
       <condition type="java" id="installonunix">
         <java>
@@ -8,11 +8,6 @@ customXML:
         </java>
       </condition>
     </conditions>
-  - >
-    <variables>
-      <variable name="Foo.theBarMan" value="$INSTALL_PATH"/>
-    </variables>
-  - <foo>$libs</foo>
 
 languages:
   - eng
@@ -36,7 +31,12 @@ info:
     uninstaller: yes
     condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
   pack200: yes
-    
+  customXML:
+    - |
+      <foo></foo>
+    - |
+      <bar></bar>
+
 packaging:
   packager: single-volume
 
@@ -85,7 +85,7 @@ panels:
     condition: pack2selected
   panel:
     className: FinishPanel
-    jar: $sourceDirectory/MyFinishPanel.jar
+    jar: $installSource/MyFinishPanel.jar
 
 packs:
   pack:
@@ -97,8 +97,7 @@ packs:
       src: $baseDirectory/src/install.yml
       target: $INSTALL_PATH/lib
     fileset:
-      includes: $dependencies
-      regexExcludes: dispatch, junit, jline, commons, apache, knockoff
+      includes: ${libraryDependencies}
       regexExcludes: posterous
       targetDirectory: $INSTALL_PATH/lib
 
