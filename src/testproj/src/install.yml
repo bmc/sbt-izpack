@@ -1,13 +1,13 @@
-customXML:
-  - |
-    <conditions>
-      <condition type="java" id="installonunix">
-        <java>
-          <class>com.izforge.izpack.util.OsVersion</class>
-          <field>IS_UNIX</field>
-        </java>
-      </condition>
-    </conditions>
+# customXML:
+#   - |
+#     <conditions>
+#       <condition type="java" id="installonunix">
+#         <java>
+#           <class>com.izforge.izpack.util.OsVersion</class>
+#           <field>IS_UNIX</field>
+#         </java>
+#       </condition>
+#     </conditions>
 
 languages:
   - eng
@@ -32,11 +32,11 @@ info:
     uninstaller: yes
     condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
   pack200: yes
-  customXML:
-    - |
-      <foo></foo>
-    - |
-      <bar></bar>
+#  customXML:
+#     - |
+#       <foo></foo>
+#     - |
+#       <bar></bar>
 
 packaging:
   packager: single-volume
@@ -47,20 +47,27 @@ guiprefs:
     name: metouia
     os: unix
 
-installerRequirement:
-  condition: installonwindows
-  message: Installer can only be run on Windows
+#installerRequirement:
+#  condition: installonwindows
+#  message: Installer can only be run on Windows
 
 resources:
   resource:
+    id: HelloPanel
+    src: $installSourceDir/hello.html
+    parse: no
+  resource:
     id: InfoPanel
-    src: $installSource/info.html
+    src: $installSourceDir/info.html
     parse: no
   resource:
     id: LicensePanel
-    src: $installSource/license.html
+    src: $installSourceDir/license.html
     parse: yes
     parseType: xml
+  resource:
+    id: Installer.image
+    src: $installSourceDir/logo.png
   installDirectory:
     os: unix
     path: /usr/local/supertool
@@ -84,9 +91,6 @@ panels:
     className: UserInputPanel
     id: myuserinput
     condition: pack2selected
-  panel:
-    className: FinishPanel
-    jar: $installSource/MyFinishPanel.jar
 
 packs:
   pack:
@@ -95,10 +99,20 @@ packs:
     preselected: true
     description: The binaries and libraries
     singleFile:
-      src: $baseDirectory/src/install.yml
-      target: $INSTALL_PATH/lib
+      src: $installSourceDir/foo.sh
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
+    parsable:
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
+    singleFile:
+      src: $installSourceDir/foo.bat
+      targetFile: $INSTALL_PATH/bin/foo.bat
+      os: windows
+    parsable:
+      targetFile: $INSTALL_PATH/bin/foo.bat
+      os: windows
     fileset:
       includes: ${libraryDependencies}
       regexExcludes: posterous
       targetDirectory: $INSTALL_PATH/lib
-
