@@ -14,6 +14,7 @@ languages:
   - deu
   - fra
 
+# The <info> section.
 info:
   appName: Yowza
   appVersion: 1.0

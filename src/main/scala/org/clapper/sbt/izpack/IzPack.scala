@@ -46,7 +46,7 @@ import scala.io.Source
 import java.io.File
 import scala.collection.mutable.{Map => MutableMap}
 
-case class Metadata(installSource: RichFile,
+case class Metadata(installSourceDir: RichFile,
                     baseDirectory: RichFile,
                     scalaVersion: String,
                     private[sbt] val updateReport: UpdateReport)
@@ -69,9 +69,9 @@ object IzPack extends Plugin
     //val izPackConfig = SettingKey[IzPackConfig]("izpack-config")
     val configFile = SettingKey[File]("config-file")
     val installerJar = SettingKey[RichFile]("installer-jar")
-    val installSource = SettingKey[File]("install-source",
+    val installSourceDir = SettingKey[File]("install-source-dir",
                                          "Directory containing auxiliary " +
-                                         "source files.")
+                                         "installer source files.")
     val installXML = SettingKey[File]("install-xml",
                                        "Path to the generated XML file.")
     val variables = SettingKey[Seq[Tuple2[String, String]]](
@@ -95,10 +95,11 @@ object IzPack extends Plugin
     val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 
         installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
-        installSource <<= baseDirectory(_ / "src" / "izpack"),
+        installSourceDir <<= baseDirectory(_ / "src" / "izpack"),
         installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
-        configFile <<= installSource(_ / "izpack.yml"),
+        configFile <<= installSourceDir(_ / "izpack.yml"),
         variables := Nil,
+
         captureSettings <<= captureSettingsTask,
         createXML <<= createXMLTask,
         createInstaller <<= createInstallerTask
@@ -117,9 +118,9 @@ object IzPack extends Plugin
     
     private def captureSettingsTask =
     {
-        (baseDirectory, installSource, update, libraryDependencies) map
+        (baseDirectory, installSourceDir, update, libraryDependencies) map
         {
-            (base, installSource, updateReport, libraryDependencies) =>
+            (base, installSourceDir, updateReport, libraryDependencies) =>
 
             val allDeps: Seq[(String, ModuleID, Artifact, File)] =
                 updateReport.toSeq
@@ -158,7 +159,7 @@ object IzPack extends Plugin
 
             Map.empty[String,String] ++ Seq(
                 "baseDirectory"       -> base.absolutePath,
-                "installSource"       -> installSource.absolutePath,
+                "installSourceDir"    -> installSourceDir.absolutePath,
                 "allDependencies"     -> updateReport.allFiles.
                                                       map{_.absolutePath}.
                                                       mkString(", "),
