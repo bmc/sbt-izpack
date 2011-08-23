@@ -37,6 +37,7 @@
 
 package org.clapper.sbt.izpack
 
+import scala.annotation.tailrec
 import sbt.RichFile
 import java.io.File
 
@@ -83,4 +84,26 @@ trait Util
      * Convert a boolean value to a "yes" or "no" string
      */
     protected def yesno(b: Boolean): String = if (b) "yes" else "no"
+
+    /**
+     * Handle English variant spellings, mapping them into appropriate
+     * IzPack-ese.
+     */
+    private val SpellingMap = Map("License" -> "Licence")
+    protected def adjustSpelling(s: String): String =
+    {
+        @tailrec
+        def adjust(s: String, kv: List[Tuple2[String, String]]): String =
+        {
+            kv match
+            {
+                case Nil =>
+                    s
+                case (before, after) :: tail =>
+                    adjust(s.replaceAll(before, after), tail)
+            }
+        }
+
+        adjust(s, SpellingMap.toList)
+    }
 }

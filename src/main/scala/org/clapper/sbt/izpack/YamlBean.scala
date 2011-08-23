@@ -127,7 +127,7 @@ private[izpack] object Implicits
 
 private[izpack] class EnhancedXMLElem(val elem: XMLElem)
 {
-    def add(attrs: Seq[Tuple2[String, String]]): XMLElem =
+    def addAttributes(attrs: Seq[Tuple2[String, Option[String]]]): XMLElem =
     {
         @tailrec
         def doAdd(e: XMLElem, attrs: Seq[Tuple2[String, String]]): XMLElem =
@@ -144,7 +144,7 @@ private[izpack] class EnhancedXMLElem(val elem: XMLElem)
             }
         }
 
-        doAdd(elem, attrs)
+        doAdd(elem, attrs.filter(t => t._2 != None).map(t => (t._1, t._2.get)))
     }
 }
 
@@ -312,7 +312,7 @@ private[izpack] trait IzPackSection extends OptionKeys
      * @return An XML node, either a node of the specified name or a comment
      */
     protected def maybeXML(name: String, create: Boolean): XMLNode =
-        maybeXML(name, create, Map.empty[String,String])
+        maybeXML(name, create, Map.empty[String,Option[String]])
 
     /**
      * Create an empty XML node IFF a boolean flag is set. Otherwise,
@@ -327,7 +327,7 @@ private[izpack] trait IzPackSection extends OptionKeys
      */
     protected def maybeXML(name: String,
                            create: Boolean,
-                           attrs: Map[String, String]): XMLNode =
+                           attrs: Map[String, Option[String]]): XMLNode =
     {
         def makeAttrs(attrs: List[(String, String)]): XMLMetaData =
         {
@@ -350,10 +350,11 @@ private[izpack] trait IzPackSection extends OptionKeys
             new XMLComment("No " + name + " element")
 
         else
-            {
-                XMLElem(null, name, makeAttrs(attrs.iterator.toList),
-                        XMLTopScope, XMLText(""))
-            }
+        {
+            val elem = XMLElem(null, name, XMLNode.NoAttributes, XMLTopScope,
+                               XMLText(""))
+            elem addAttributes attrs.toSeq
+        }
     }
 }
 
@@ -693,14 +694,16 @@ private[izpack] class Info extends IzPackSection with OptionStrings with Util
           {strOptToXMLElement(WebDir)}
           {strOptToXMLElement(SummaryLogFilePath)}
           {authorsToXML}
-          <writeinstallationinformation>{yesno(writeInstallationInfo)}</writeinstallationinformation>
+          <writeinstallationinformation>
+            {yesno(writeInstallationInfo)}
+          </writeinstallationinformation>
           <requiresjdk>{yesno(requiresJDK)}</requiresjdk>
-        {maybeXML("uninstaller", createUninstaller,
-                  Map("write" -> "yes"))}
-        {maybeXML("run-privileged", runPrivileged.enabled,
-                  Map("condition" -> runPrivileged.condition.getOrElse(""),
-                      "uninstaller" -> yesno(runPrivileged.uninstaller)))}
-        {maybeXML("pack200", pack200)}
+          {maybeXML("uninstaller", createUninstaller,
+                    Map("write" -> Some("yes")))}
+          {maybeXML("run-privileged", runPrivileged.enabled,
+                    Map("condition" -> runPrivileged.condition,
+                        "uninstaller" -> Some(yesno(runPrivileged.uninstaller))))}
+          {maybeXML("pack200", pack200)}
         </info>
     }
 
@@ -761,7 +764,7 @@ with Util with HasParseType
 {
     @BeanProperty var parse: Boolean = false
 
-    def setId(id: String): Unit = setOption(Id, id)
+    def setId(id: String): Unit = setOption(Id, adjustSpelling(id))
     def setSrc(src: String): Unit = setOption(Src, src)
 
     def toXML =
@@ -826,7 +829,7 @@ private[izpack] class Packaging extends IzPackSection with Util
 
     var packager: Option[Packager] = None
     @BeanProperty var volumeSize: Int = 0
-    @BeanProperty var firstVolFreeSpace: Int = 0
+    @BeanProperty var firstVolumeFreeSpace: Int = 0
 
     def setPackager(value: String): Unit =
     {
@@ -840,31 +843,31 @@ private[izpack] class Packaging extends IzPackSection with Util
     protected def sectionToXML =
     {
         val p = packager.getOrElse(Packager.SingleVolume)
-        if ((p != MultiVolume) && ((volumeSize + firstVolFreeSpace) > 0))
+        if ((p != MultiVolume) && ((volumeSize + firstVolumeFreeSpace) > 0))
         {
-            izError("volumeSize and firstVolFreeSpace are " +
+            izError("volumeSize and firstVolumeFreeSpace are " +
                     "ignored unless packager is MultiVolume.")
         }
 
-        var unpacker: String = ""
+        val (packagingXML, unpacker) = p match
+        {
+            case MultiVolume =>
+                (
+                    <options
+                        volumesize={volumeSize.toString}
+                        firstvolumefreespace={firstVolumeFreeSpace.toString}/>,
+                    "com.izforge.izpack.installer.MultiVolumeUnpacker"
+                )
+
+            case SingleVolume =>
+                (
+                    new XMLComment("no options"),
+                    "com.izforge.izpack.installer.Unpacker"
+                )
+        }
 
         <packaging>
-            <packager class={p.toString}>
-            {
-                p match
-                {
-                    case MultiVolume =>
-                        <options volumesize={volumeSize.toString}
-                                 firstvolumefreespace={firstVolFreeSpace.toString}
-                         />
-                        unpacker = "com.izforge.izpack.installer." +
-                                   "MultiVolumeUnpacker"
-                    case SingleVolume =>
-                        new XMLComment("no options")
-                        unpacker = "com.izforge.izpack.installer.Unpacker"
-                }
-            }
-            </packager>
+            <packager class={p.toString}>packagingXML</packager>
             <unpacker class={unpacker}/>
         </packaging>
     }
@@ -943,8 +946,11 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util
     private var actions = new ListBuffer[Action]
     private var validators = new ListBuffer[Validator]
 
-    def setClassName(name: String): Unit = setOption(ClassName, name)
-    def setId(id: String): Unit = setOption(Id, id)
+    def setClassName(name: String): Unit = 
+        setOption(ClassName, adjustSpelling(name))
+
+    def setId(id: String): Unit = setOption(Id, adjustSpelling(id))
+
     def setCondition(s: String): Unit = setOption(Condition, s)
 
     /**
@@ -957,7 +963,7 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util
     {
         import Implicits._
 
-        val node =
+        val elem =
             <panel classname={requiredString(ClassName)}>
             {
                 if (help.length > 0)
@@ -979,14 +985,9 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util
             }
             </panel>
 
-        val attrs = Seq(("jar", jar.map(_.absolutePath)),
-                        ("id", getOption(Id)),
-                        ("condition", getOption(Condition))).
-                    filter(t => t._2 != None).
-                    map(t => (t._1, t._2.get))
-
-
-        node add attrs
+        elem addAttributes Seq(("jar", jar.map(_.absolutePath)),
+                               ("id", getOption(Id)),
+                               ("condition", getOption(Condition)))
     }
 }
 
@@ -1140,34 +1141,43 @@ with OperatingSystemConstraints with OptionStrings with Overridable with Util
 
 private[izpack] class SingleFile extends OneFile with Util
 {
+    import Implicits._
+
     def setTargetFile(s: String): Unit = setOption(Target, s)
 
     protected def sectionToXML =
     {
-        <singlefile src={srcPath}
-            target={requiredString(Target)}
-            override={overrideValue}
-            condition={optionString(Condition)}>
-            {operatingSystemsToXML}
-        </singlefile>
+        val elem =
+            <singlefile src={srcPath}
+                        target={requiredString(Target)}
+                        override={overrideValue}
+                        condition={optionString(Condition)}>
+                {operatingSystemsToXML}
+            </singlefile>
+
+        elem addAttributes Seq(("condition", getOption(Condition)))
     }
 }
 
 private[izpack] class FileOrDirectory extends OneFile with Util
 {
+    import Implicits._
+
     @BeanProperty var unpack: Boolean = false
 
     def setTargetDir(s: String): Unit = setOption(TargetDir, s)
 
     protected def sectionToXML =
     {
-        <file src={srcPath}
-              targetdir={requiredString(TargetDir)}
-              unpack={yesno(unpack)}
-              override={overrideValue}
-              condition={optionString(Condition)}>
-            {operatingSystemsToXML}
-        </file>
+        val elem =
+            <file src={srcPath}
+                  targetdir={requiredString(TargetDir)}
+                  unpack={yesno(unpack)}
+                  override={overrideValue}>
+                {operatingSystemsToXML}
+            </file>
+
+        elem addAttributes Seq(("condition", getOption(Condition)))
     }
 }
 
@@ -1175,6 +1185,7 @@ private[izpack] class FileSet extends OperatingSystemConstraints
 with Util with OptionStrings with Overridable
 {
     import Constants._
+    import Implicits._
 
     private var includes = MutableSet[String]()
     private var excludes = MutableSet[String]()
@@ -1229,15 +1240,17 @@ with Util with OptionStrings with Overridable
 
     private def fileToXML(path: String) =
     {
-        <file src={new File(path).getAbsolutePath}
-              targetdir={requiredString(TargetDir)}
-              unpack={yesno(unpack)}
-              condition={optionString(Condition)}
-              casesensitive={yesno(unpack)}
-              defaultexcludes={yesno(unpack)}
-              override={overrideValue}>
-            {operatingSystemsToXML}
-        </file>
+        val elem =
+            <file src={new File(path).getAbsolutePath}
+                  targetdir={requiredString(TargetDir)}
+                  unpack={yesno(unpack)}
+                  casesensitive={yesno(unpack)}
+                  defaultexcludes={yesno(unpack)}
+                  override={overrideValue}>
+                {operatingSystemsToXML}
+            </file>
+
+        elem addAttributes Seq(("condition", getOption(Condition)))
     }
 }
 
@@ -1263,6 +1276,8 @@ private[izpack] class UpdateCheck extends OptionStrings with Util
 private[izpack] class Executable extends IzPackSection
 with OperatingSystemConstraints with OptionStrings with Util
 {
+    import Implicits._
+
     private[izpack] object FailureTypes
                 extends ConstrainedValues(Set("abort", "ask", "warn"),
                                           "warn", "failureType")
@@ -1286,26 +1301,30 @@ with OperatingSystemConstraints with OptionStrings with Util
 
     protected def sectionToXML =
     {
-        <executable targetfile={requiredString(Target)}
-                    stage={requiredString(Stage)}
-                    class={optionString(Class)}
-                    condition={optionString(Condition)}
-                    keep={keep.toString}
-                    failure={requiredString(FailureType)}>
+        val elem =
+            <executable targetfile={requiredString(Target)}
+                        stage={requiredString(Stage)}
+                        keep={keep.toString}
+                        failure={requiredString(FailureType)}>
             {operatingSystemsToXML}
-        {
-            if (args.length == 0)
-                new XMLComment("No args")
-            else
-                args.map(a => <arg value={a}/>)
-        }
-        </executable>
+            {
+                if (args.length == 0)
+                    new XMLComment("No args")
+                else
+                    args.map(a => <arg value={a}/>)
+            }
+            </executable>
+
+        elem addAttributes Seq(("class",     getOption(Class)),
+                               ("condition", getOption(Condition)))
     }
 }
 
 private[izpack] class Parsable extends IzPackSection
 with OperatingSystemConstraints with OptionStrings with HasParseType
 {
+    import Implicits._
+
     private var parseType: String = ParseTypes.default
 
     def setTargetFile(s: String): Unit = setOption(TargetFile, s)
@@ -1314,12 +1333,14 @@ with OperatingSystemConstraints with OptionStrings with HasParseType
 
     protected def sectionToXML =
     {
-        <parsable targetfile={requiredString(TargetFile)}
-                  condition={optionString(Condition)}
-                  encoding={optionString(Encoding)}
-                  type={requiredString(ParseType)}>
-           {operatingSystemsToXML}
-        </parsable>
+        val elem =
+            <parsable targetfile={requiredString(TargetFile)}
+                      type={requiredString(ParseType)}>
+                {operatingSystemsToXML}
+            </parsable>
+
+        elem addAttributes Seq(("condition", getOption(Condition)),
+                               ("encoding",  getOption(Encoding)))
     }
 }
 
