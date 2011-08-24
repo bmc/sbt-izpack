@@ -67,14 +67,19 @@ trait Util
         writer.close()
     }
 
-    protected def temporaryFile(ext: String): RichFile =
-        temporaryFile("izpack", "ext")
-
-    protected def temporaryFile(prefix: String, ext: String): RichFile =
+    protected def temporaryFile(tempDir: File,
+                                name: String,
+                                ext: String): RichFile =
     {
-        val f = File.createTempFile(prefix, ext)
+        if (! tempDir.exists)
+        {
+            if (! tempDir.mkdirs)
+                izError("Can't create directory \"%s\"" format tempDir)
+        }
+
+        val f = new RichFile(tempDir) / (name + ext)
         f.deleteOnExit()
-        new RichFile(f)
+        f
     }
 
     protected def izError(msg: String) =

@@ -98,11 +98,13 @@ object IzPack extends Plugin
         installSourceDir <<= baseDirectory(_ / "src" / "izpack"),
         installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
         configFile <<= installSourceDir(_ / "izpack.yml"),
+        tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
         variables := Nil,
 
         captureSettings <<= captureSettingsTask,
         createXML <<= createXMLTask,
-        createInstaller <<= createInstallerTask
+        createInstaller <<= createInstallerTask,
+        clean <<= cleanTask
     )) ++ 
     inConfig(Compile)(Seq(
         // Hook our clean into the global one.
@@ -170,40 +172,50 @@ object IzPack extends Plugin
 
     private def cleanTask: Initialize[Task[Unit]] =
     {
-        (installXML, streams) map 
+        import grizzled.file.GrizzledFile._
+
+        (installXML, tempDirectory, streams) map 
         {
-            (installXML, streams) =>
+            (installXML, tempDirectory, streams) =>
 
             if (installXML.exists)
             {
                 streams.log.debug("Deleting \"%s\"" format installXML)
                 installXML.delete
             }
+
+            if (tempDirectory.exists)
+            {
+                streams.log.debug("Deleting \"%s\"" format tempDirectory)
+                tempDirectory.deleteRecursively
+            }
         }
     }
 
     private def createXMLTask =
     {
-        (configFile, installXML, variables, captureSettings, streams) map
+        (configFile, installXML, variables, captureSettings, tempDirectory,
+         logLevel, streams) map
         {
-            (configFile, installXML, variables, capturedSettings, streams) =>
+            (configFile, installXML, variables, capturedSettings,
+             tempdir, logLevel, streams) =>
 
             createXML(configFile, variables, capturedSettings, installXML,
-                      streams.log)
+                      tempdir, logLevel, streams.log)
         }
     }
 
     private def createInstallerTask =
     {
         (configFile, installerJar, installXML, variables, captureSettings,
-         streams) map
+         tempDirectory, logLevel, streams) map
         {
             (configFile, outputJar, installXML, variables, capturedSettings,
-             streams) =>
+             tempdir, logLevel, streams) =>
 
             val log = streams.log
             val xml = createXML(configFile, variables, capturedSettings,
-                                installXML, log)
+                                installXML, tempdir, logLevel, log)
             makeInstaller(xml, outputJar, log)
         }
     }
@@ -212,11 +224,13 @@ object IzPack extends Plugin
                           variables: Seq[Tuple2[String, String]],
                           capturedSettings: Map[String, String],
                           installXML: RichFile,
+                          tempDirectory: File,
+                          logLevel: Level.Value,
                           log: Logger): RichFile =
     {
         val allVariables = capturedSettings ++ variables
-        val sbtData = new SBTData(allVariables)
-        val parser = new IzPackYamlConfigParser(sbtData, log)
+        val sbtData = new SBTData(allVariables, tempDirectory)
+        val parser = new IzPackYamlConfigParser(sbtData, logLevel, log)
         val izConfig = parser.parse(Source.fromFile(configFile))
 
         // Create the XML.

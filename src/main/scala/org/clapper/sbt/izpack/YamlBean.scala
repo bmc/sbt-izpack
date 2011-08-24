@@ -70,7 +70,13 @@ import java.util.{ArrayList => JArrayList,
                   List => JList,
                   Map => JMap,
                   HashMap => JHashMap}
-import sbt.{Logger, ModuleID, RichFile, Path, PathFinder, UpdateReport}
+import sbt.{Logger,
+            Level => LogLevel,
+            ModuleID,
+            RichFile,
+            Path,
+            PathFinder,
+            UpdateReport}
 import grizzled.string.template.UnixShellStringTemplate
 import grizzled.string.{util => StringUtil}
 import grizzled.file.{util => FileUtil}
@@ -80,7 +86,7 @@ object MissingSection
     def apply(name: String) = new XMLComment("No " + name + " section.")
 }
 
-case class SBTData(variables: Map[String, String])
+case class SBTData(variables: Map[String, String], tempDir: File)
 
 /**
  * Implemented by config-related classes that can take an operating
@@ -364,7 +370,9 @@ private[izpack] object Constants
     val IzPackVariableEscape = "@@@"
 }
 
-class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
+class IzPackYamlConfigParser(sbtData: SBTData,
+                             logLevel: LogLevel.Value,
+                             log: Logger) extends Util
 {
     import Constants._
 
@@ -389,19 +397,22 @@ class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
     {
         try
         {
+            Globals.variables = Variables
+            Globals.sbtData = Some(sbtData)
+
             val yaml = new Yaml(new Constructor(classOf[IzPackYamlConfig]))
             val doc = preFilter(source.getLines.toList).mkString("\n")
-            val cfg = yaml.load(doc).asInstanceOf[IzPackYamlConfig]
-            cfg.variables = Variables
-            cfg
+
+            yaml.load(doc).asInstanceOf[IzPackYamlConfig]
         }
 
         catch
         {
             case e: Throwable =>
                 val e2 = findCorrectException(e)
-                e2.printStackTrace()
-                error(e2.getMessage)
+                if (logLevel == LogLevel.Debug)
+                    e2.printStackTrace()
+                izError(e2.getMessage)
         }
     }
 
@@ -443,9 +454,18 @@ class IzPackYamlConfigParser(sbtData: SBTData, log: Logger) extends Util
 }
 
 /**
+ * A regrettable global...
+ */
+private[izpack] object Globals
+{
+    var variables = Map.empty[String,String]
+    var sbtData: Option[SBTData] = None
+}
+
+/**
  * Base configuration class.
 */
-class IzPackYamlConfig extends IzPackSection with Util
+private[izpack] class IzPackYamlConfig extends IzPackSection with Util
 {
     private var theInfo: Option[Info] = None
     private var languages: List[String] = Nil
@@ -458,9 +478,6 @@ class IzPackYamlConfig extends IzPackSection with Util
 
     private lazy val dateFormatter =
         new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
-
-    // Must be injected.
-    var variables = Map.empty[String,String]
 
     private def setOnce[T <: IzPackSection](target: Option[T],
                                             newValue: Option[T]): Option[T] =
@@ -548,6 +565,7 @@ class IzPackYamlConfig extends IzPackSection with Util
     private def variablesToXML =
     {
         import Constants._
+        import Globals._
 
         <variables>
         {
@@ -783,6 +801,8 @@ with Util with HasParseType
 private[izpack] class InstallDirectory extends Util
 with OperatingSystemConstraints
 {
+    import Globals._
+
     private var path: Option[String] = None
 
     def setPath(s: String): Unit = path = Some(FileUtil.nativePath(s))
@@ -798,7 +818,8 @@ with OperatingSystemConstraints
         val instPath = path.getOrElse(
             izError("No path setting in installDirectory section.")
         )
-        val filename = temporaryFile("instdir_" + os, ".txt")
+        val filename = temporaryFile(sbtData.get.tempDir,
+                                     "instdir_" + os, ".txt")
         // Put the string in the file. That's how IzPack wants it.
         writeStringToFile(filename, instPath)
         filename.absolutePath

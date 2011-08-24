@@ -17,3 +17,5 @@ configFile in IzPack <<= baseDirectory(_ / "src" / "install.yml")
 installSourceDir in IzPack <<= baseDirectory(_ / "src" / "installer")
 
 variables in IzPack <<= (libraryDependencies) {l => Seq(("libs", l.map(_.getClass.getName).toString))}
+
+logLevel in Global := Level.Debug
