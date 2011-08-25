@@ -61,9 +61,8 @@ import scala.collection.mutable.{ListBuffer,
 import scala.collection.generic.Growable
 import scala.io.Source
 import scala.util.matching.Regex
-import org.yaml.snakeyaml.{TypeDescription, Yaml}
-import org.yaml.snakeyaml.constructor.{AbstractConstruct, Constructor}
-import org.yaml.snakeyaml.nodes.{Node => YamlNode, Tag => YamlTag}
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.Constructor
 import java.io.File
 import java.util.{ArrayList => JArrayList,
                   Collections => JCollections,
