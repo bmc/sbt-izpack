@@ -117,59 +117,9 @@ trait OperatingSystemConstraints extends Util
         operatingSystems.map(os => <os family={os}/>)
 }
 
-private[izpack] object Implicits
-{
-    // Implicits
-
-    implicit def stringToWrapper(s: String): XString = new XString(s)
-    implicit def wrapperToString(is: XString): String = is.str
-
-    implicit def xmlElemToWrapper(e: XMLElem): EnhancedXMLElem =
-        new EnhancedXMLElem(e)
-    implicit def wrapperToXMLElem(ee: EnhancedXMLElem): XMLElem =
-        ee.elem
-}
-
-private[izpack] class EnhancedXMLElem(val elem: XMLElem)
-{
-    def addAttributes(attrs: Seq[Tuple2[String, Option[String]]]): XMLElem =
-    {
-        @tailrec
-        def doAdd(e: XMLElem, attrs: Seq[Tuple2[String, String]]): XMLElem =
-        {
-            attrs match
-            {
-                case Nil =>
-                    e
-                case (name, value) :: tail =>
-                    doAdd(e % new UnprefixedAttribute(name,
-                                                      value, 
-                                                      XMLNode.NoAttributes),
-                          tail)
-            }
-        }
-
-        doAdd(elem, attrs.filter(t => t._2 != None).map(t => (t._1, t._2.get)))
-    }
-}
-
 /**
- * Useful string methods
+ * Keys used in option strings.
  */
-private[izpack] class XString(val str: String)
-{
-    /**
-     * Convenience method to check for a string that's null or empty.
-     */
-    def isEmpty = (str == null) || (str.trim == "")
-
-    /**
-     * Convert the string to an option. An empty or null string
-     * is converted to `None`.
-     */
-    def toOption = if (isEmpty) None else Some(str)
-}
-
 private[izpack] trait OptionKeys
 {
     // Values must match what IzPack expects
@@ -237,21 +187,6 @@ private[izpack] trait OptionStrings extends OptionKeys
             text => XMLElem(null, name, XMLNode.NoAttributes, XMLTopScope,
                             XMLText(text))
         }.getOrElse(new XMLComment("No " + name + " element"))
-}
-
-private[izpack] class ConstrainedValues(val values: Set[String],
-                                        val default: String,
-                                        val name: String)
-extends Util
-{
-    def apply(s: String): String =
-    {
-        if (values(s))
-            s
-        else 
-            izError("Bad name value of \"" + s + "\". Legal values: " +
-                    values.mkString(", "))
-    }
 }
 
 private[izpack] object ParseTypes 
@@ -369,6 +304,9 @@ private[izpack] object Constants
     val IzPackVariableEscape = "@@@"
 }
 
+/**
+ * The configuration parser.
+ */
 class IzPackYamlConfigParser(sbtData: SBTData,
                              logLevel: LogLevel.Value,
                              log: Logger) extends Util
