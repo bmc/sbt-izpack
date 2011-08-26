@@ -781,7 +781,8 @@ with Util with HasParseType
 {
     @BeanProperty var parse: Boolean = false
 
-    def setId(id: String): Unit = setOption(Id, adjustSpelling(id))
+    // Don't adjust license spelling here. Yeah, IzPack isn't consistent.
+    def setId(id: String): Unit = setOption(Id, id)
     def setSrc(src: String): Unit = setOption(Src, src)
 
     def toXML =
@@ -966,11 +967,8 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util
     private var actions = new ListBuffer[Action]
     private var validators = new ListBuffer[Validator]
 
-    def setClassName(name: String): Unit = 
-        setOption(ClassName, adjustSpelling(name))
-
-    def setId(id: String): Unit = setOption(Id, adjustSpelling(id))
-
+    def setClassName(name: String): Unit = setOption(ClassName, name)
+    def setId(id: String): Unit = setOption(Id, id)
     def setCondition(s: String): Unit = setOption(Condition, s)
 
     /**
@@ -1170,8 +1168,7 @@ private[izpack] class SingleFile extends OneFile with Util
         val elem =
             <singlefile src={srcPath}
                         target={requiredString(Target)}
-                        override={overrideValue}
-                        condition={optionString(Condition)}>
+                        override={overrideValue}>
                 {operatingSystemsToXML}
             </singlefile>
 

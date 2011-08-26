@@ -94,21 +94,9 @@ trait Util
      * Handle English variant spellings, mapping them into appropriate
      * IzPack-ese.
      */
-    private val SpellingMap = Map("License" -> "Licence")
-    protected def adjustSpelling(s: String): String =
+    protected def adjustLicenseSpelling(s: String): String =
     {
-        @tailrec
-        def adjust(s: String, kv: List[Tuple2[String, String]]): String =
-        {
-            kv match
-            {
-                case Nil =>
-                    s
-                case (before, after) :: tail =>
-                    adjust(s.replaceAll(before, after), tail)
-            }
-        }
-
-        adjust(s, SpellingMap.toList)
+        s.replaceAll("License", "Licence").
+          replaceAll("license", "licence")
     }
 }

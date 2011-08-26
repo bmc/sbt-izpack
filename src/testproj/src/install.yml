@@ -53,16 +53,16 @@ guiprefs:
 
 resources:
   resource:
-    id: HelloPanel
-    src: $installSourceDir/hello.html
-    parse: no
-  resource:
-    id: InfoPanel
+    id: HTMLInfoPanel.info
     src: $installSourceDir/info.html
     parse: no
   resource:
-    id: LicensePanel
+    id: HTMLLicencePanel.licence
     src: $installSourceDir/license.html
+    parse: no
+  resource:
+    id: XInfoPanel.info
+    src: $installSourceDir/final-screen.txt
     parse: yes
     parseType: xml
   resource:
@@ -82,15 +82,19 @@ panels:
   panel:
     className: HelloPanel
   panel:
-    className: LicensePanel
+    className: HTMLInfoPanel
+  panel:
+    className: HTMLLicencePanel
   panel:
     className: TargetPanel
   panel:
+    className: PacksPanel
+  panel:
     className: InstallPanel
   panel:
-    className: UserInputPanel
-    id: myuserinput
-    condition: pack2selected
+    className: XInfoPanel
+  panel:
+    className: FinishPanel
 
 packs:
   pack:
