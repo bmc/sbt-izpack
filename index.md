@@ -587,6 +587,83 @@ subsections.
         os: macosx
         path: /usr/local/supertool
 
+### The "panels" section
+
+The `panels` section corresponds to the IzPack
+[`<panels>`][izpack-panels] XML element and currently supports one or more
+`panel` subsections. Each `panel` subsection supports the following
+subsections and settings:
+
+[izpack-panels]: http://izpack.org/documentation/installation-files.html#the-panels-element-panels
+
+#### "panel" settings
+
+* `classname` (string): The class name of the panel, which can be an
+  IzPack built-in class or a custom class. **Required**.
+* `id` (string): An identifier for the panel. *Optional*. No default.
+* `condition` (string): A string indicating a condition for the panel. See
+  [the "condition" setting][] and the documentation for
+  [IzPack `<panels>`][izpack-panels] for more information. *Optional*.
+  No default.
+* `jar` (string): The path to the jar file, for a custom panel.
+  *Optional*. No default.
+
+#### "panel" subsections
+
+* `help`: Specifies the contents of a help screen to be shown if the user
+  presses the help button on the panel. *Optional*. Multiple `help`
+  settings are permitted, to allow for separate languages. `help` supports
+  the following settings:
+  
+  - `iso3` (string): The ISO3 language code for the help screen.
+  - `src` (string): The path to the source file for the screen.
+
+* `validator`: A value validator for the panel. *Optional*. Multiple
+  `validator` sections are permitted. `validator` supports the following
+  settings:
+  
+  - `classname` (string): The fully-qualified name of a class that implements
+    `com.izforge.izpack.installer.DataValidator`.
+
+* `action`: Optional actions for the panel. Multiple `action` sections
+  are permitted. Each takes the following settings:
+
+  - `stage`: The stage at which the action should be triggered. *Required*.
+    Legal values: `preconstruct`, `preactivate`, `prevalidate`, or
+    `postvalidate`.
+  - `classname` (string): The fully-qualified name of a class that implements
+    `com.izforge.izpack.installer.PanelAction`.
+
+### Example "panels" section
+
+    panels:
+      panel:
+        className: HelloPanel
+        help:
+           iso3: eng
+           src: $installSource/HellPanelHelp_eng.html
+        help:
+           iso3: deu
+           src: $installSource/HellPanelHelp_deu.html
+      panel:
+        className: LicencePanel
+      panel:
+        className: TargetPanel
+      panel:
+        className: InstallPanel
+      panel:
+        className: UserInputPanel
+        id: myuserinput
+        condition: pack2selected
+        action:
+          stage: preconstruct
+          classname: ConnectionPreConstructAction
+          stage: preactivate
+          classname: ConnectionPreActivateAction
+      panel:
+        className: FinishPanel
+        jar: MyFinishPanel.jar
+
 <a name="fileset"></a>
 ### The "fileset" section
 
