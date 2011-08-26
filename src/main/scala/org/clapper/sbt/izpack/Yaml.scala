@@ -912,6 +912,9 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util
     def setClassName(name: String): Unit = setOption(ClassName, name)
     def setId(id: String): Unit = setOption(Id, id)
     def setCondition(s: String): Unit = setOption(Condition, s)
+    def setHelp(h: Help): Unit = help += h
+    def setAction(a: Action): Unit = actions += a
+    def setValidator(v: Validator): Unit = validators += v
 
     /**
      * Allows assignment of `jar` field
