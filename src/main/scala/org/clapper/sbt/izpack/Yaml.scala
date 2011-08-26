@@ -875,7 +875,10 @@ extends IzPackSection with OperatingSystemConstraints
 
     protected def sectionToXML =
     {
-        <laf name={name}> {operatingSystemsToXML} </laf>
+        <laf name={name}>
+          {operatingSystemsToXML}
+          {params.map(kv => <param name={kv._1} value={kv._2}/>)}
+        </laf>
     }
 }
 

@@ -44,8 +44,9 @@ packaging:
 guiprefs:
   resizable: no
   laf:
-    name: metouia
-    os: unix
+    name: looks
+    os: windows
+    variant: extwin
 
 #installerRequirement:
 #  condition: installonwindows
