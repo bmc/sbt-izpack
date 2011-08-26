@@ -1,0 +1,3 @@
+Completely rewritten for SBT 0.10.x. Now uses a YAML configuration file,
+rather than a Scala DSL, for configuration, resulting in a more compact
+(and, arguably, more readable) configuration.
