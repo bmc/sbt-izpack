@@ -714,11 +714,14 @@ private[izpack] class Resources extends IzPackSection
 private[izpack] class Resource extends OptionStrings
 with Util with HasParseType
 {
+    import Implicits._
+
     @BeanProperty var parse: Boolean = false
 
     // Don't adjust license spelling here. Yeah, IzPack isn't consistent.
     def setId(id: String): Unit = setOption(Id, id)
     def setSrc(src: String): Unit = setOption(Src, src)
+    def setEncoding(e: String): Unit = setOption(Encoding, e)
 
     def toXML =
     {
@@ -728,8 +731,9 @@ with Util with HasParseType
             izError("Resource %s has \"src\" value \"%s\", but that file " +
                     "does not exist." format (id, src))
 
-        <res id={id} src={src.getAbsolutePath} parse={yesno(parse)}
-             type={requiredString(ParseType)}/>
+        val elem = <res id={id} src={src.getAbsolutePath} parse={yesno(parse)}
+                        type={requiredString(ParseType)}/>
+        elem addAttributes Seq(("encoding", getOption(Encoding)))
     }
 }
 
