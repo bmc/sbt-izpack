@@ -1,0 +1,129 @@
+# Sample sbt-izpack Installation Configuration File. Rename to "install.yml".
+# ---------------------------------------------------------------------------
+
+# customXML:
+#   - |
+#     <conditions>
+#       <condition type="java" id="installonunix">
+#         <java>
+#           <class>com.izforge.izpack.util.OsVersion</class>
+#           <field>IS_UNIX</field>
+#         </java>
+#       </condition>
+#     </conditions>
+
+languages:
+  - eng
+  - deu
+  - fra
+
+# The <info> section.
+info:
+  appName: Yowza
+  appVersion: 1.0
+  url: https://github.com/bmc/
+  summaryLogFilePath: "/tmp/out"
+  javaVersion: 1.5
+  author:
+    name: Brian Clapper
+    email: bmc@clapper.org
+  author:
+    name: Joe Schmoe
+  createUninstaller: no
+  runPrivileged:
+    enabled: no
+    uninstaller: yes
+    condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
+  pack200: yes
+#  customXML:
+#     - |
+#       <foo></foo>
+#     - |
+#       <bar></bar>
+
+packaging:
+  packager: single-volume
+
+guiprefs:
+  resizable: no
+  laf:
+    name: looks
+    os: windows
+    variant: extwin
+
+#installerRequirement:
+#  condition: installonwindows
+#  message: Installer can only be run on Windows
+
+resources:
+  resource:
+    id: HTMLInfoPanel.info
+    src: $installSourceDir/info.html
+    parse: no
+  resource:
+    id: HTMLLicencePanel.licence
+    src: $installSourceDir/license.html
+    parse: no
+  resource:
+    id: XInfoPanel.info
+    src: $installSourceDir/final-screen.txt
+    parse: yes
+    parseType: xml
+  resource:
+    id: Installer.image
+    src: $installSourceDir/logo.png
+  installDirectory:
+    os: unix
+    path: /usr/local/supertool
+  installDirectory:
+    os: windows
+    path: C:/Program Files/SuperTool
+  installDirectory:
+    os: macosx
+    path: /usr/local/supertool
+
+panels:
+  panel:
+    className: HelloPanel
+  panel:
+    className: HTMLInfoPanel
+  panel:
+    className: HTMLLicencePanel
+  panel:
+    className: TargetPanel
+  panel:
+    className: PacksPanel
+  panel:
+    className: InstallPanel
+  panel:
+    className: XInfoPanel
+  panel:
+    className: FinishPanel
+
+packs:
+  pack:
+    name: Core
+    required: true
+    preselected: true
+    description: The binaries and libraries
+    singleFile:
+      src: $installSourceDir/foo.sh
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
+    parsable:
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
+    executable:
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
+    singleFile:
+      src: $installSourceDir/foo.bat
+      targetFile: $INSTALL_PATH/bin/foo.bat
+      os: windows
+    parsable:
+      targetFile: $INSTALL_PATH/bin/foo.bat
+      os: windows
+    fileset:
+      includes: ${libraryDependencies}
+      regexExcludes: posterous
+      targetDir: $INSTALL_PATH/lib
