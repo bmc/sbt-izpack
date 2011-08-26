@@ -1019,6 +1019,8 @@ private[izpack] class Pack
 extends IzPackSection with OperatingSystemConstraints
 with Util with OptionStrings
 {
+    import Implicits._
+
     private var files = new ListBuffer[OneFile]
     private var filesets = new ListBuffer[FileSet]
     private var executables = new ListBuffer[Executable]
@@ -1045,20 +1047,23 @@ with Util with OptionStrings
 
     protected def sectionToXML =
     {
-        <pack name={requiredString(Name)} 
-              required={yesno(required)}
-              loose={loose.toString}
-              hidden={hidden.toString}
-              preselected={yesno(preselected)}>
-            <description>{optionString(Description)}</description>
-            {operatingSystemsToXML}
-            {depends.map(s => <depends packname={s}/>)}
-            {files.map(_.toXML)}
-            {filesets.map(_.toXML).flatten}
-            {parsables.map(_.toXML)}
-            {executables.map(_.toXML)}
-            {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
-        </pack>
+        val elem = 
+            <pack name={requiredString(Name)} 
+                  required={yesno(required)}
+                  loose={loose.toString}
+                  hidden={hidden.toString}
+                  preselected={yesno(preselected)}>
+              <description>{optionString(Description)}</description>
+              {operatingSystemsToXML}
+              {depends.map(s => <depends packname={s}/>)}
+              {files.map(_.toXML)}
+              {filesets.map(_.toXML).flatten}
+              {parsables.map(_.toXML)}
+              {executables.map(_.toXML)}
+              {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
+          </pack>
+
+        elem addAttributes Seq(("packImgId", getOption(PackImgId)))
     }
 }
 
@@ -1154,9 +1159,7 @@ with Util with OptionStrings with Overridable
     // Purely for matching
     private var regexExcludes = MutableSet[Regex]()
 
-    @BeanProperty var unpack: Boolean = false
     @BeanProperty var caseSensitive: Boolean = false
-    @BeanProperty var defaultExcludes: Boolean = false
 
     def setIncludes(patternList: String): Unit =
     {
@@ -1178,7 +1181,7 @@ with Util with OptionStrings with Overridable
                 regexExcludes += reString.r
     }
 
-    def setTargetDirectory(path: String): Unit = setOption(TargetDir, path)
+    def setTargetDir(path: String): Unit = setOption(TargetDir, path)
     def setCondition(s: String): Unit = setOption(Condition, s)
 
     def toXML =
@@ -1205,9 +1208,7 @@ with Util with OptionStrings with Overridable
         val elem =
             <file src={new File(path).getAbsolutePath}
                   targetdir={requiredString(TargetDir)}
-                  unpack={yesno(unpack)}
-                  casesensitive={yesno(unpack)}
-                  defaultexcludes={yesno(unpack)}
+                  casesensitive={yesno(caseSensitive)}
                   override={overrideValue}>
                 {operatingSystemsToXML}
             </file>

@@ -110,6 +110,9 @@ packs:
     parsable:
       targetFile: $INSTALL_PATH/bin/foo.sh
       os: unix
+    executable:
+      targetFile: $INSTALL_PATH/bin/foo.sh
+      os: unix
     singleFile:
       src: $installSourceDir/foo.bat
       targetFile: $INSTALL_PATH/bin/foo.bat
@@ -120,4 +123,4 @@ packs:
     fileset:
       includes: ${libraryDependencies}
       regexExcludes: posterous
-      targetDirectory: $INSTALL_PATH/lib
+      targetDir: $INSTALL_PATH/lib
