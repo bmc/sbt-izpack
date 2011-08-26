@@ -89,7 +89,6 @@ Now the plugin is available to your SBT builds.
 
 The plugin provides the following new settings.
 
-
 ---
 
 **`installSourceDir`**
@@ -149,7 +148,7 @@ Default: `baseDirectory(_ / "target" / "installtmp")`
 
 ---
 
-<a name="variables-setting"></a>
+<a name="variables_setting"></a>
 
 `variables` is a sequence of `(variableName, value)` pairs. For instance,
 the following two lines define:
@@ -166,6 +165,8 @@ the following two lines define:
 These variables can be substituted within the YAML configuration file and
 augment the [predefined variables](#predefined_variables) the plugin defines.
 
+*sbt-izpack* automatically creates an IzPack XML `<variables>` section and
+populates it with these variables and the predefined variables.
 
 # Tasks
 
@@ -202,7 +203,7 @@ reference.)
 ### Defining variables
 
 Recall, from the previous discussion of the
-[`variables` section](#variables-section), that you can set your own
+[`variables` setting](#variables_setting), that you can set your own
 variables by including logic like the following, in your `build.sbt` file:
 
     variables in IzPack <+= name {name => ("projectName", name)}
@@ -243,10 +244,35 @@ the standard YAML types. In particular:
 * Where a field is *integer*, its value must be a legal
   [YAML int](http://yaml.org/type/int.html).
 
-## Configuration file sections
-
 The YAML configuration file is broken into sections, just like its IzPack
 XML counterpart.
+
+## Unsupported sections
+
+*sbt-izpack* does not directly support some of the section in the underlying
+IzPack XML, including:
+
+* `<variables>`. The *sbt-izpack* variable substitution mechanism is
+  easier to use and generates an IzPack XML `<variables>` section.
+* `<dynamicvariables>`. If you want to define dynamic variables, use a
+  [Custom XML][] section.
+* `<conditions>`. If you want to define your own conditions in the IzPack
+  XML, use a [Custom XML][] section.
+* `<refpack>`. If you want to define your own refpacks in the IzPack
+  XML, use a [Custom XML][] section.
+
+## Common sections and settings
+
+Many sections support common subsections and settings, described here.
+
+### Paths
+
+When a path is required, use a Unix-style forward-slash ("/") as the path
+separator; *sbt-izpack* will convert it to a backslash on Windows. Also,
+the [predefined variables](#predefined_variables) can be a big help:
+
+    resource:
+      src: $baseDirectory/src/resources/license.txt
 
 ### Custom XML
 
@@ -274,6 +300,35 @@ element to be inserted into the generated IzPack XML.
 
 Those sections that support `customXML` are clearly indicated, below.
 
+### The "condition" setting
+
+When a section supports a `condition` setting, the condition value consists
+of one or more IzPack conditions, separated by a vertical bar ("|") symbol.
+A condition is either an [IzPack built-in condition][] or one defined in a
+[Custom XML][] section.
+
+Example:
+
+    condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
+
+### The "os" subsection
+
+Some sections support an `os` setting, which corresponds to an IzPack XML
+`<os>` element. The `os` setting tells IzPack that the parent section only
+applies to the specified the operating system family or families.
+
+In *sbt-izpack*'s YAML configuration, the `os` setting is a comma-separated
+list of operating system family names. Supported names are: `macosx`,
+`unix`, and `windows`. (`unix` includes Linux, FreeBSD, Solaris, and other
+Unix variants.)
+
+Examples:
+
+    os: macosx, unix
+    os: windows
+
+## Configuration file sections
+
 ### The "installation" section
 
 Unlike the XML IzPack configuration, the YAML configuration format does not
@@ -283,7 +338,9 @@ have a root-level `installation` section.
 
 The `info` section corresponds to the IzPack
 [`<info>`](http://izpack.org/documentation/installation-files.html#the-information-element-info)
-XML element and supports the following subsections:
+XML element and supports the following settings and subsections:
+
+#### Settings
 
 * `appName` (string): The application name. **Required.**
 * `appVersion` (string): The application version. **Required.**
@@ -305,6 +362,9 @@ XML element and supports the following subsections:
   add to your packs to be compressed using Pack200. *Optional*. Default: `no`.
 * `createUninstaller` (boolean): Specifies whether or not to create an
   uninstaller. *Optional*. Default: `no`.
+
+#### Subsections
+
 * `author`: A section consisting of two subelements, specifying the author
   or authors of the application. This section can be specified multiple
   times. The subelements are:
@@ -321,10 +381,8 @@ XML element and supports the following subsections:
     *Optional*. Default: `yes`
   - `uninstaller` (boolean): Whether or not to *disable* the privilege
     escalation for the uninstaller. *Optional*. Default: `false`.
-  - `condition` (string): A string indicating an
-    [IzPack built-in condition][], allowing you to control the conditions
-    under which privilege escalation applies. Useful for restricting
-    it to, say, Windows. *Optional*. No default.
+  - `condition` (string): The conditions under which the privilege escalation
+    applies. Useful for restricting it to, say, Windows. *Optional*. No default.
 
 **This section supports `customXML`.**
 
@@ -351,17 +409,185 @@ XML element and supports the following subsections:
 ### The "languages" section
 
 The `languages` section corresponds to the IzPack
-[`<locale>`](http://izpack.org/documentation/installation-files.html#the-localization-element-locale)
-XML element, though it dispenses with the `locale` parent in factor of a
-simple list of ISO3 language codes. For example:
+[`<locale>`][izpack-locale] XML element, though it dispenses with the
+`locale` parent in factor of a simple list of ISO3 language codes. For
+example:
 
     languages:
       - eng
       - deu
       - fra
 
-<a name="fileset"></a>
+[izpack-locale]: http://izpack.org/documentation/installation-files.html#the-localization-element-locale
 
+### The "packaging" section
+
+The `packaging` section corresponds to the IzPack
+[`<packaging>`][izpack-packaging] XML element and supports the following
+settings and subsections.
+
+#### Settings
+
+* `packager` (string): The IzPack packager type. *Optional.* Legal values:
+  `single-volume`, `multi-volume`. Default: `single-volume`.
+
+Unlike the IzPack XML format, the plugin's YAML configuration does not
+support an `unpacker` setting, since its value can be inferred from the
+packager type.
+
+See the IzPack documentation for complete details on the difference between
+single-volume and multi-volume installers.
+
+#### Subsections
+
+If the `packager` type is `multi-volume`, the following subsections are
+supported:
+
+* `volumesize` (integer): The size of the volumes. *Optional.* No default.
+* `firstVolumeFreeSpace` (integer): Free space on the first volume, to be
+  used for the installer jar and additional resources. *Optional*. No default.
+
+[izpack-packaging]: http://izpack.org/documentation/installation-files.html#the-packaging-element-packaging
+
+#### Example "packaging" section
+
+    packaging:
+      packager: single-volume
+
+### The "installerRequirement" section
+
+The `installerRequirement` section corresponds to the IzPack
+[`<installerrequirement>`][izpack-installerrequirements] XML element.
+Unlike the IzPack XML format, there's no outer `<installerrequirements>`
+element; instead, just include multiple `installerRequirement` YAML sections.
+
+It supports the following settings:
+
+* `condition` (string): A string indicating a requirement condition. See
+  [the "condition" setting][] for more information.
+* `message`: Text or a language key defining the message to be shown, before
+  the installer exits, in case of a missing requirement.
+
+[izpack-installerrequirements]: http://izpack.org/documentation/installation-files.html#the-installer-requirements-element-installerrequirements
+
+#### Example "installerRequirement" section
+
+    installerRequirement:
+      condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
+      message: Installer can only be run on Windows
+
+### The "guiprefs" section
+
+The `guiprefs` section corresponds to the IzPack
+[`<guiprefs>`][izpack-guiprefs] XML element and supports the following
+settings and subsections.
+
+[izpack-guiprefs]: http://izpack.org/documentation/installation-files.html#the-gui-preferences-element-guiprefs
+
+#### Settings
+
+* `resizable` (boolean): Whether or not the installer window can be resized.
+  *Optional*. Default: `yes`
+* `width` (integer): The width, in pixels, of the installer window.
+  *Optional*. Default: 800
+* `height` (integer): The height, in pixels, of the installer window.
+  *Optional*. Default: 600
+
+#### Subsections
+
+* `laf`: A look-and-feel descriptor, consisting of the following settings:
+
+  - `name` (string): The name of a look and feel.
+  - `os` (string): The operating system families to which the look-and-feel
+    entry applies. See [The "os" setting][] for details.
+
+All other settings are parameters specific to the look and feel. See the
+[IzPack documentation on `<guiprefs>`][izpack-guiprefs] for details.
+
+#### Example "guiprefs" section
+
+    guiprefs:
+      resizable: no
+      laf:
+        name: looks
+        os: windows
+        variant: extwin
+
+### The "resources" section
+
+The `resources` section corresponds to the IzPack
+[`<resources>`][izpack-resources] XML element and supports the following
+subsections.
+
+* `resource`: A single resource. The following settings are supported:
+
+  - `id` (string): The resource ID. Note that for IzPack resources, like
+    the Info panel and the License panel, these IDs have specific names,
+    and spelling counts. For instance:
+    
+    + `HTMLInfoPanel.info`: The ID for an HTML version of the Info panel
+    + `HTMLLicencePanel.licence`: The ID for an HTML version of the License
+      panel. Note the British spelling of "licence".
+
+    See the [IzPack documentation][izpack-resources] for details.
+
+  - `src` (string): The path to the source file containing the contents
+    of the resource. **Required**.
+
+  - `parse` (boolean): Whether or not the IzPack compiler should parse the
+    file and do IzPack variable substitution. Note that *sbt-izpack* currently
+    does *not* parse the file, so the only variable substitution supported is
+    the native IzPack substitution. (That may change in a future release of
+    *sbt-izpack*, however.) *Optional*. Default: `no`
+
+  - `type` (string): Only examined if `parse` is `yes`, this value defines
+    what kind of parsing IzPack is to do. *Optional*. Legal values: `ant`,
+    `at`, `java`, `javaprop`, `plain`, `shell`, `xml`. Default: `plain`.
+
+  - `encoding` (string): Specifies the resource encoding, if necessary. Only
+    useful for a text resource. *Optional*. No default.
+
+* `installDirectory`: Specifies a default installation directory. This
+  configuration subsection is provides convenient shorthand for the IzPack
+  "TargetPanel.dir.*os*" resource. It has the following settings:
+  
+  - `os` (string): The operating system to which the installation directory
+    applies See [The "os" setting][] for details.
+  - `path` (string): The path to the directory (on the system where the
+    installer runs).
+
+[izpack-resources]: http://izpack.org/documentation/installation-files.html#the-resources-element-resources
+
+#### Example "resources" section
+
+    resources:
+      resource:
+        id: HTMLInfoPanel.info
+        src: $installSourceDir/info.html
+        parse: no
+      resource:
+        id: HTMLLicencePanel.licence
+        src: $installSourceDir/license.html
+        parse: no
+      resource:
+        id: XInfoPanel.info
+        src: $installSourceDir/final-screen.txt
+        parse: yes
+        parseType: xml
+      resource:
+        id: Installer.image
+        src: $installSourceDir/logo.png
+      installDirectory:
+        os: unix
+        path: /usr/local/supertool
+      installDirectory:
+        os: windows
+        path: C:/Program Files/SuperTool
+      installDirectory:
+        os: macosx
+        path: /usr/local/supertool
+
+<a name="fileset"></a>
 ### The "fileset" section
 
 # Change log
@@ -402,3 +628,6 @@ request. Along with any patch you send:
 [IzPack built-in condition]: http://izpack.org/documentation/installation-files.html#built-in-conditions
 [DSL]: http://en.wikipedia.org/wiki/Domain-specific_language
 [YAML]: http://yaml.org/
+[Custom XML]: #custom_xml
+[the "condition" setting]: #the_condition_setting
+[the "os" setting]: #the_os_setting
