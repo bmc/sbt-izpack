@@ -123,9 +123,6 @@ trait OperatingSystemConstraints extends Util
 private[izpack] trait OptionKeys
 {
     // Values must match what IzPack expects
-    final val Windows     = "windows"
-    final val MacOSX      = "macosx"
-    final val Unix        = "unix"
     final val OS          = "os"
     final val Id          = "id"
     final val PackImgId   = "packimgid"
