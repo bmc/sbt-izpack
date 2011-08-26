@@ -135,9 +135,21 @@ Default: `baseDirectory(_ / "target" / "installer.jar")`
 
 ---
 
+**`tempDirectory`**
+
+---
+
+Where the plugin should generate various installer-related temporary files.
+
+Default: `baseDirectory(_ / "target" / "installtmp")`
+
+---
+
 **`variables`**
 
 ---
+
+<a name="variables-setting"></a>
 
 `variables` is a sequence of `(variableName, value)` pairs. For instance,
 the following two lines define:
@@ -157,19 +169,28 @@ augment the [predefined variables](#predefined_variables) the plugin defines.
 
 # Tasks
 
-The plugin provides two new SBT tasks.
+The plugin provides three new SBT tasks.
 
-* `editsource:edit` performs the edits on each source file that is out
-  of date with respect to its corresponding target file. If no variable
-  substitutions or regular expression substitutions are specified,
-  `editsource:edit` does nothing.
-
-* `editsource:clean` deletes all target edited files. `editsource:clean`
+* `izpack:create-installer` generates the installer jar file from your YAML
+  configuration.
+* `izpack:create-xml` converts the YAML configuration file to the XML file
+  required by IzPack. You generally don't need to invoke this task
+  yourself; `izpack:create-installer` invokes it automatically. This task
+  exists primarily for debugging.
+* `izpack:clean` deletes all target edited files. `izpack:clean`
   is also automatically linked into the main SBT `clean` task.
 
 # The YAML configuration file
 
+The YAML configuration file tracks the [IzPack XML][] file format fairly
+closely. There are some differences, but the main difference is readability.
+
 ## Variables
+
+Like "regular" IzPack, the *sbt-izpack* plugin supports variable
+substitution within its configuration file. *sbt-izpack* provides some
+[predefined variables](#predefined_variables), and you can add your own in
+your build file.
 
 Inside a source file to be edited, variable references are of the form
 `${varname}`, as in the Unix shell. A shortened `$varname` is also support.
@@ -178,38 +199,170 @@ If the reference variable has no value, then the default value is supplied,
 instead. (The `?default` syntax is not supported for the short form
 reference.)
 
-With the above definitions in place, when the source files are edited, any
-reference to `${projectName}` is replaced with "my-project", and any
-reference to `${author}` is replaced with "Brian Clapper".
+### Defining variables
 
-You can define any number of variables. If the edit logic encounters a
+Recall, from the previous discussion of the
+[`variables` section](#variables-section), that you can set your own
+variables by including logic like the following, in your `build.sbt` file:
+
+    variables in IzPack <+= name {name => ("projectName", name)}
+
+    variables in IzPack += ("author", "Brian Clapper")
+
+With those definitions in place, any reference to `${projectName}` within
+the configuration YAML is replaced with "my-project", and any reference to
+`${author}` is replaced with "Brian Clapper".
+
+You can define any number of variables. If the plugin logic encounters a
 variable that isn't defined, it simply replaces the variable reference with
 an empty string (like *bash* does).
 
-In addition to the variables you define in your build file, the
-*sbt-editsource* also honors the following special variable prefixes:
-
-* `env.`: Any variable starting with `env.` is assumed to be an environment
-  variable reference. For instance, `${env.HOME}` will substitute the value
-  of the "HOME" environment variable.
-* `sys.now`: The current date and time, in "yyyy/mm/dd HH:MM:ss" form. For
-  example: `${sys.now}` might yield "2011/08/17 13:01:56"
-* `sys.today`: The current date, in "yyyy/mm/dd" form.
-* `sys.*something*`: Any other variable name starting with `sys.` is
-  assumed to refer to a JVM system property and is resolved via a call to
-  `java.lang.System.getProperty()`. Thus, `${sys.user.name}` substitutes
-  the `user.name` property, and `${sys.java.io.tmpdir}` substitutes the
-  `java.io.tmpdir` property.
-
 ### Predefined variables
 
-# Restrictions
+In addition to the variables you define in your build file, *sbt-izpack*
+also defines the following variables:
 
-* Currently, *sbt-editsource* only supports one set of edits, applied to
-  *all* specified files. That is, you cannot specify one set of edits for
-  one group of files and a second set of edits for a different group of
-  files. In the future, the plugin may be enhanced to support this
-  capability.
+* `${baseDirectory}`: The value of the SBT `baseDirectory` setting.
+* `${installSourceDir}`: The value of the `installSourceDir` setting. (See
+  above.)
+* `${libraryDependencies}`: The value of the SBT `libraryDependencies` setting.
+* `${allDependencies}`: The names of all the jars SBT needs to build your
+  project, as a single string of paths separated by commas. This string
+  can be substituted directly into the `includes` value of a `fileset`.
+  (See [Fileset](#fileset), below.)
+
+## Types
+
+*sbt-izpack* uses [SnakeYAML](http://www.snakeyaml.org/) and supports
+the standard YAML types. In particular:
+
+* Where a field is *boolean*, you can specify any legal
+  [YAML boolean](http://yaml.org/type/bool.html) string, namely, "y", "n",
+  "yes", "no", "true", "false", "on" or "off", without regard to upper- or
+  lower-case.
+* Where a field is *integer*, its value must be a legal
+  [YAML int](http://yaml.org/type/int.html).
+
+## Configuration file sections
+
+The YAML configuration file is broken into sections, just like its IzPack
+XML counterpart.
+
+### Custom XML
+
+While the *sbt-izpack* contains everything you'll need for most installers,
+it's possible that *sbt-izpack* will not support a certain obscure piece of
+IzPack XML you require. Most sections support a `customXML` key, allowing
+you to insert your own XML at the end of the section. For example:
+
+    customXML:
+      - |
+        <conditions>
+          <condition type="java" id="installonunix">
+            <java>
+              <class>com.izforge.izpack.util.OsVersion</class>
+              <field>IS_UNIX</field>
+            </java>
+          </condition>
+        </conditions>
+
+When a `customXML` key is suppliedx, its value is a list of
+[YAML block literals][], which each literal representing a single XML
+element to be inserted into the generated IzPack XML.
+
+[YAML block literals]: http://en.wikipedia.org/wiki/YAML#Block_literals
+
+Those sections that support `customXML` are clearly indicated, below.
+
+### The "installation" section
+
+Unlike the XML IzPack configuration, the YAML configuration format does not
+have a root-level `installation` section.
+
+### The "info" section
+
+The `info` section corresponds to the IzPack
+[`<info>`](http://izpack.org/documentation/installation-files.html#the-information-element-info)
+XML element and supports the following subsections:
+
+* `appName` (string): The application name. **Required.**
+* `appVersion` (string): The application version. **Required.**
+* `url` (string): The URL of the web site for the application.
+  *Optional.* No default.
+* `javaVersion` (string): The minimum Java runtime version required to run the
+  application being installed. Values can be `1.2`, `1.2.2`, `1.4`, etc.
+  *Optional.* Default: `1.6`
+* `requiresJDK` (boolean): Whether a JDK (as opposed to just a JRE) is required
+  to run the installed application. *Optional.* Default: `no`
+* `webdir` (string): Causes a web installer to be created and specifies a
+  URL from which to retrieve packages at run-time. *Optional.* No default.
+* `summaryLogFilePath` (string): A path for an installer log file.
+  *Optional.* No default.
+* `writeInstallationInfo` (boolean): Whether or not a `.installinformation`
+  file should be written when the installer is run; the file includes 
+  information about installed packs. *Optional.* Default: `yes`
+* `pack200` (boolean): If enabled, this item causes every unsigned JAR file you
+  add to your packs to be compressed using Pack200. *Optional*. Default: `no`.
+* `createUninstaller` (boolean): Specifies whether or not to create an
+  uninstaller. *Optional*. Default: `no`.
+* `author`: A section consisting of two subelements, specifying the author
+  or authors of the application. This section can be specified multiple
+  times. The subelements are:
+
+  - `name`: The author name. **Required**.
+  - `email`: The author's email address. *Optional*. No default.
+
+* `runPrivileged`: This is a special, optional section containing three
+  subelements. Enabling this capability causes the installer to try to run
+  with administrator privileges.
+
+  - `enabled` (boolean): Whether or not the section is enabled. Allows
+    you to easily disable it, without commenting the whole section out.
+    *Optional*. Default: `yes`
+  - `uninstaller` (boolean): Whether or not to *disable* the privilege
+    escalation for the uninstaller. *Optional*. Default: `false`.
+  - `condition` (string): A string indicating an
+    [IzPack built-in condition][], allowing you to control the conditions
+    under which privilege escalation applies. Useful for restricting
+    it to, say, Windows. *Optional*. No default.
+
+**This section supports `customXML`.**
+
+#### Example "info" section
+
+    info:
+      appName: Yowza
+      appVersion: 1.0
+      url: https://github.com/bmc/yowza
+      summaryLogFilePath: "/tmp/out"
+      javaVersion: 1.5
+      author:
+        name: Brian Clapper
+        email: bmc@clapper.org
+      author:
+        name: Joe Schmoe
+      createUninstaller: no
+      runPrivileged:
+        enabled: no
+        uninstaller: yes
+        condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
+      pack200: yes
+
+### The "languages" section
+
+The `languages` section corresponds to the IzPack
+[`<locale>`](http://izpack.org/documentation/installation-files.html#the-localization-element-locale)
+XML element, though it dispenses with the `locale` parent in factor of a
+simple list of ISO3 language codes. For example:
+
+    languages:
+      - eng
+      - deu
+      - fra
+
+<a name="fileset"></a>
+
+### The "fileset" section
 
 # Change log
 
@@ -246,5 +399,6 @@ request. Along with any patch you send:
 [SBT cross-building]: http://code.google.com/p/simple-build-tool/wiki/CrossBuild
 [IzPack XML]: http://izpack.org/documentation/installation-files.html
 [Izpack]: http://izpack.org/
+[IzPack built-in condition]: http://izpack.org/documentation/installation-files.html#built-in-conditions
 [DSL]: http://en.wikipedia.org/wiki/Domain-specific_language
 [YAML]: http://yaml.org/
