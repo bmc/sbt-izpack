@@ -225,6 +225,8 @@ an empty string (like *bash* does).
 In addition to the variables you define in your build file, *sbt-izpack*
 also defines the following variables:
 
+* `${appName}`: The value of the SBT `name` (project name) setting.
+* `${appVersion}`: The value of the SBT `version` (project version) setting.
 * `${baseDirectory}`: The value of the SBT `baseDirectory` setting.
 * `${installSourceDir}`: The value of the `installSourceDir` setting. (See
   above.)
