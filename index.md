@@ -353,6 +353,9 @@ element and supports the following settings and subsections:
 
 **`appVersion`** (string): The application version. **Required.**
 
+** `appSubPath`** (string): The subpath for the default installation path.
+*Optional*. Default: the `appName`
+
 **`url`** (string): The URL of the web site for the application.
 *Optional.* No default.
 
