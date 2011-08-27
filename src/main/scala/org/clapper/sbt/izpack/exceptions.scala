@@ -43,8 +43,9 @@ package org.clapper.sbt.izpack
 
 private[sbt] class IzPluginException(msg: String) extends Exception(msg)
 
-private[sbt] class MissingFieldException(name: String)
-    extends IzPluginException("Missing required \"" + name + "\" field")
+private[sbt] class MissingFieldException(name: String, sectionName: String)
+    extends IzPluginException("Missing required \"" + name + "\" field in " +
+                              "section \"" + sectionName + "\"")
 
 private[sbt] class IzConfigException(msg: String)
     extends IzPluginException(msg)

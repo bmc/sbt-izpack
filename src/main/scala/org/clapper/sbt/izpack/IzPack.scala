@@ -91,7 +91,6 @@ object IzPack extends Plugin
         "Don't mess with this. Seriously. If you do, you'll break the plugin."
     )
 
-    val mySettings = Seq(variables in Global := Nil)
     val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack)(Seq(
 
         installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
@@ -195,7 +194,7 @@ object IzPack extends Plugin
     private def createXMLTask =
     {
         (configFile, installXML, variables, captureSettings, tempDirectory,
-         logLevel, streams) map
+         Keys.logLevel, streams) map
         {
             (configFile, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>
@@ -208,7 +207,7 @@ object IzPack extends Plugin
     private def createInstallerTask =
     {
         (configFile, installerJar, installXML, variables, captureSettings,
-         tempDirectory, logLevel, streams) map
+         tempDirectory, Keys.logLevel, streams) map
         {
             (configFile, outputJar, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>
