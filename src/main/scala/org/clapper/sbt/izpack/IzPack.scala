@@ -80,6 +80,9 @@ object IzPack extends Plugin
     val tempDirectory = SettingKey[File](
         "temp-dir", "Where to generate temporary installer files."
     )
+    val logLevel = SettingKey[Level.Value](
+        "log-level", "Log level within sbt-izpack"
+    )
 
     val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
     val createInstaller = TaskKey[Unit]("create-installer",
@@ -99,6 +102,7 @@ object IzPack extends Plugin
         configFile <<= installSourceDir(_ / "izpack.yml"),
         tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
         variables := Nil,
+        logLevel := Level.Warn,
 
         captureSettings <<= captureSettingsTask,
         createXML <<= createXMLTask,
@@ -194,7 +198,7 @@ object IzPack extends Plugin
     private def createXMLTask =
     {
         (configFile, installXML, variables, captureSettings, tempDirectory,
-         Keys.logLevel, streams) map
+         logLevel, streams) map
         {
             (configFile, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>
@@ -207,7 +211,7 @@ object IzPack extends Plugin
     private def createInstallerTask =
     {
         (configFile, installerJar, installXML, variables, captureSettings,
-         tempDirectory, Keys.logLevel, streams) map
+         tempDirectory, logLevel, streams) map
         {
             (configFile, outputJar, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>
