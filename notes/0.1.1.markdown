@@ -4,3 +4,4 @@
 * `stage` in an `executable` (within a `pack`) now defaults to
   `never`. (It didn't have a default, but was required.)
 * Added missing `type` field to `executable` XML element.
+* Now published for Scala 2.8.1, 2.9.0 and 2.9.0-1.
