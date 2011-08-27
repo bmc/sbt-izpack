@@ -35,3 +35,9 @@ div.indent
 {
     margin-left: +3em !important;
 }
+
+pre
+{
+    /* "display: inline-block" forces browser to shrink width to fit. */
+    display: inline-block;
+}
