@@ -80,7 +80,7 @@ object IzPack extends Plugin
     val tempDirectory = SettingKey[File](
         "temp-dir", "Where to generate temporary installer files."
     )
-    val logLevel = SettingKey[Level.Value](
+    val izLogLevel = SettingKey[Level.Value](
         "log-level", "Log level within sbt-izpack"
     )
 
@@ -102,7 +102,7 @@ object IzPack extends Plugin
         configFile <<= installSourceDir(_ / "izpack.yml"),
         tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
         variables := Nil,
-        logLevel := Level.Warn,
+        izLogLevel := Level.Warn,
 
         captureSettings <<= captureSettingsTask,
         createXML <<= createXMLTask,
@@ -123,9 +123,11 @@ object IzPack extends Plugin
     
     private def captureSettingsTask =
     {
-        (baseDirectory, installSourceDir, update, libraryDependencies) map
+        (baseDirectory, installSourceDir, update, libraryDependencies,
+         name, version) map
         {
-            (base, installSourceDir, updateReport, libraryDependencies) =>
+            (base, installSourceDir, updateReport, libraryDependencies,
+             name, version) =>
 
             val allDeps: Seq[(String, ModuleID, Artifact, File)] =
                 updateReport.toSeq
@@ -163,6 +165,8 @@ object IzPack extends Plugin
             }.distinct
 
             Map.empty[String,String] ++ Seq(
+                "appName"             -> name,
+                "appVersion"          -> version,
                 "baseDirectory"       -> base.absolutePath,
                 "installSourceDir"    -> installSourceDir.absolutePath,
                 "allDependencies"     -> updateReport.allFiles.
@@ -198,7 +202,7 @@ object IzPack extends Plugin
     private def createXMLTask =
     {
         (configFile, installXML, variables, captureSettings, tempDirectory,
-         logLevel, streams) map
+         izLogLevel, streams) map
         {
             (configFile, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>
@@ -211,7 +215,7 @@ object IzPack extends Plugin
     private def createInstallerTask =
     {
         (configFile, installerJar, installXML, variables, captureSettings,
-         tempDirectory, logLevel, streams) map
+         tempDirectory, izLogLevel, streams) map
         {
             (configFile, outputJar, installXML, variables, capturedSettings,
              tempdir, logLevel, streams) =>

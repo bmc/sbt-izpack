@@ -16,8 +16,8 @@ languages:
 
 # The <info> section.
 info:
-  appName: Yowza
-  appVersion: 1.0
+  appName: $appName
+  appVersion: $appVersion
   url: https://github.com/bmc/
   summaryLogFilePath: "/tmp/out"
   javaVersion: 1.5

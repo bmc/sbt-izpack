@@ -5,3 +5,5 @@
   `never`. (It didn't have a default, but was required.)
 * Added missing `type` field to `executable` XML element.
 * Now published for Scala 2.8.1, 2.9.0 and 2.9.0-1.
+* Predefined variables now contain `$appName` and `$appVersion`, taken
+  from SBT's `name` and `version` settings, respectively.
