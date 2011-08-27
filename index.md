@@ -991,6 +991,25 @@ they appear in the configuration file. *Optional*. No default.
 
 </div>
 
+##### `updateCheck`
+
+<div class="indent" markdown="1">
+
+Updates an already-installed package, removing superfluous files after
+installation. It supports two settings:
+
+**`includes`** (string): A comma-separated list of files or patterns to be
+included in the pack. See [Fileset patterns](#fileset_patterns), below, for
+details on the supported patterns. May be specified more than once. At
+least one `includes` setting is **required**.
+
+**`excludes`** (string): A comma-separated list of files or patterns to be
+excluded from the list of files matched by `includes`. See
+[Fileset patterns](#fileset_patterns), below, for details on the supported
+patterns. *Optional*. No default.
+
+</div>
+
 ### Fileset patterns
 
 The patterns supported by the `fileset` subsection's `includes` and
