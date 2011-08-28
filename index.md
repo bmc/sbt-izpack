@@ -69,13 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
 
-    // The plugin is only published for 2.8.1
-    libraryDependencies <<= (scalaVersion, libraryDependencies) { (scv, deps) =>
-        if (scv == "2.8.1")
-            deps :+ "org.clapper" %% "sbt-izpack" % "0.1"
-        else
-            deps
-    }
+    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.1"
 
 Next, in your main project `build.sbt` file, add:
 
