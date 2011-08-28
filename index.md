@@ -69,7 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
 
-    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.1"
+    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.2"
 
 Next, in your main project `build.sbt` file, add:
 
@@ -164,14 +164,28 @@ populates it with these variables and the predefined variables.
 
 The plugin provides three new SBT tasks.
 
-* `izpack:create-installer` generates the installer jar file from your YAML
-  configuration.
-* `izpack:create-xml` converts the YAML configuration file to the XML file
-  required by IzPack. You generally don't need to invoke this task
-  yourself; `izpack:create-installer` invokes it automatically. This task
-  exists primarily for debugging.
-* `izpack:clean` deletes all target edited files. `izpack:clean`
-  is also automatically linked into the main SBT `clean` task.
+**`izpack:create-xml`**
+
+Converts the YAML configuration file to the XML file required by IzPack.
+You generally don't need to invoke this task yourself;
+`izpack:create-installer` invokes it automatically. This task exists
+primarily for debugging.
+
+The tasks depends on `(packageBin in Compile)`, so your code will
+automatically be compiled and packaged into its jar file(s) before the
+installer XML is generated.
+
+**`izpack:create-installer`**
+
+Generates the installer jar file from your YAML configuration. The tasks
+depends on `izpack:create-xml` which, in turn, depends on `(packageBin in
+Compile)`, so your code will automatically be compiled and packaged into
+its jar file(s) before the installer is created.
+
+**`izpack:clean`**
+
+Deletes all *sbt-izpack*-generated files and directories. `izpack:clean` is
+also automatically linked into the main SBT `clean` task.
 
 # The YAML configuration file
 

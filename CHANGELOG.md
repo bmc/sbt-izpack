@@ -3,6 +3,14 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
+Version 0.1.2:
+
+* Default log level in *sbt-izpack* is now `Info`, not `Warn`.
+* `(createXML in IzPack)` now depends on `(packageBin in Compile)`, so
+  compilation will be triggered automatically, before the installer
+  configuration is translated.
+* `(createInstaller in IzPack)` now depends on `(createXML in IzPack)`.
+
 Version 0.1.1:
 
 * Fixed a problem with `logLevel` handling.
