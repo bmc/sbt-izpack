@@ -127,10 +127,6 @@ object IzPack extends Plugin
 
         (createXML in IzPack) <<= (createXML in IzPack).dependsOn(
             packageBin in Compile
-        ),
-
-        (createInstaller in IzPack) <<= (createInstaller in IzPack).dependsOn(
-            createXML in IzPack
         )
     ))
 
@@ -274,16 +270,12 @@ object IzPack extends Plugin
 
     private def createInstallerTask =
     {
-        (configFile, installerJar, installXML, variables, predefinedVariables,
-         tempDirectory, izLogLevel, streams) map
+        (createXML, installerJar, streams) map
         {
-            (configFile, outputJar, installXML, variables, predefinedVariables,
-             tempdir, logLevel, streams) =>
+            (xml, outputJar, streams) =>
 
-            val log = streams.log
-            val xml = createXML(configFile, variables, predefinedVariables,
-                                installXML, tempdir, logLevel, log)
-            makeInstaller(xml, outputJar, log)
+            makeInstaller(xml, outputJar, streams.log)
+            ()
         }
     }
 
