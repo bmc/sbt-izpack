@@ -45,6 +45,7 @@ import com.izforge.izpack.compiler.CompilerConfig
 import scala.io.Source
 import java.io.File
 import scala.collection.mutable.{Map => MutableMap}
+import grizzled.file.{util => FileUtil}
 
 case class Metadata(installSourceDir: RichFile,
                     baseDirectory: RichFile,
@@ -89,8 +90,17 @@ object IzPack extends Plugin
                                         "Create IzPack installer")
 
     val clean = TaskKey[Unit]("clean", "Remove target files.")
-    val captureSettings = TaskKey[Map[String,String]](
-        "-capture-settings",
+    val predefinedVariables = TaskKey[Map[String, String]](
+        "predefined-variables", "Predefined sbt-izpack variables"
+    )
+
+    val captureSettings1 = TaskKey[Map[String,String]](
+        "-capture-settings-1",
+        "Don't mess with this. Seriously. If you do, you'll break the plugin."
+    )
+
+    val captureSettings2 = TaskKey[Map[String,String]](
+        "-capture-settings-2",
         "Don't mess with this. Seriously. If you do, you'll break the plugin."
     )
 
@@ -104,7 +114,9 @@ object IzPack extends Plugin
         variables := Nil,
         izLogLevel := Level.Warn,
 
-        captureSettings <<= captureSettingsTask,
+        predefinedVariables <<= predefinedVariablesTask,
+        captureSettings1 <<= captureSettingsTask1,
+        captureSettings2 <<= captureSettingsTask2,
         createXML <<= createXMLTask,
         createInstaller <<= createInstallerTask,
         clean <<= cleanTask
@@ -121,14 +133,38 @@ object IzPack extends Plugin
     private def allDependencies(updateReport: UpdateReport) =
         updateReport.allFiles.map(_.absolutePath).mkString(", ")
     
-    private def captureSettingsTask =
+    private def predefinedVariablesTask =
     {
-        (baseDirectory, installSourceDir, update, libraryDependencies,
-         name, version) map
-        {
-            (base, installSourceDir, updateReport, libraryDependencies,
-             name, version) =>
+        (captureSettings1) map { m => m }
+    }
 
+    private def captureSettingsTask1 =
+    {
+        (update,
+         libraryDependencies,
+         target,
+         (classDirectory in Compile),
+         name,
+         normalizedName,
+         version,
+         scalaVersion,
+         captureSettings2) map
+        {
+            (updateReport,
+             libraryDependencies,
+             target,
+             classDirectory,
+             name,
+             normalizedName,
+             version,
+             scalaVersion,
+             settingsMap) =>
+
+            val classesParent = classDirectory.getParentFile.getAbsolutePath
+            val jarName = "%s_%s-%s.jar" format (normalizedName,
+                                                 scalaVersion,
+                                                 version)
+            val appJar = FileUtil.joinPath(classesParent, jarName)
             val allDeps: Seq[(String, ModuleID, Artifact, File)] =
                 updateReport.toSeq
             val allDepFiles = allDeps.map(tuple => tuple._1)
@@ -164,15 +200,31 @@ object IzPack extends Plugin
                 file
             }.distinct
 
-            Map.empty[String,String] ++ Seq(
+            settingsMap ++ Seq(
                 "appName"             -> name,
                 "appVersion"          -> version,
-                "baseDirectory"       -> base.absolutePath,
-                "installSourceDir"    -> installSourceDir.absolutePath,
+                "normalizedAppName"   -> normalizedName,
+                "scalaVersion"        -> scalaVersion,
+                "target"              -> target.absolutePath,
+                "appJar"              -> appJar,
+                "classDirectory"      -> classDirectory.absolutePath,
                 "allDependencies"     -> updateReport.allFiles.
                                                       map{_.absolutePath}.
                                                       mkString(", "),
                 "libraryDependencies" -> libDepFiles.mkString(", ")
+            )
+        }
+    }
+
+    private def captureSettingsTask2 =
+    {
+        (baseDirectory, installSourceDir) map
+        {
+            (base, installSourceDir) =>
+
+            Map.empty[String,String] ++ Seq(
+                "baseDirectory"       -> base.absolutePath,
+                "installSourceDir"    -> installSourceDir.absolutePath
             )
         }
     }
@@ -201,27 +253,27 @@ object IzPack extends Plugin
 
     private def createXMLTask =
     {
-        (configFile, installXML, variables, captureSettings, tempDirectory,
+        (configFile, installXML, variables, predefinedVariables, tempDirectory,
          izLogLevel, streams) map
         {
-            (configFile, installXML, variables, capturedSettings,
+            (configFile, installXML, variables, predefinedVariables,
              tempdir, logLevel, streams) =>
 
-            createXML(configFile, variables, capturedSettings, installXML,
+            createXML(configFile, variables, predefinedVariables, installXML,
                       tempdir, logLevel, streams.log)
         }
     }
 
     private def createInstallerTask =
     {
-        (configFile, installerJar, installXML, variables, captureSettings,
+        (configFile, installerJar, installXML, variables, predefinedVariables,
          tempDirectory, izLogLevel, streams) map
         {
-            (configFile, outputJar, installXML, variables, capturedSettings,
+            (configFile, outputJar, installXML, variables, predefinedVariables,
              tempdir, logLevel, streams) =>
 
             val log = streams.log
-            val xml = createXML(configFile, variables, capturedSettings,
+            val xml = createXML(configFile, variables, predefinedVariables,
                                 installXML, tempdir, logLevel, log)
             makeInstaller(xml, outputJar, log)
         }
@@ -229,13 +281,13 @@ object IzPack extends Plugin
 
     private def createXML(configFile: File,
                           variables: Seq[Tuple2[String, String]],
-                          capturedSettings: Map[String, String],
+                          predefinedVariables: Map[String, String],
                           installXML: RichFile,
                           tempDirectory: File,
                           logLevel: Level.Value,
                           log: Logger): RichFile =
     {
-        val allVariables = capturedSettings ++ variables
+        val allVariables = predefinedVariables ++ variables
         val sbtData = new SBTData(allVariables, tempDirectory)
         val parser = new IzPackYamlConfigParser(sbtData, logLevel, log)
         val izConfig = parser.parse(Source.fromFile(configFile))
