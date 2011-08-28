@@ -225,16 +225,21 @@ an empty string (like *bash* does).
 In addition to the variables you define in your build file, *sbt-izpack*
 also defines the following variables:
 
-* `${appName}`: The value of the SBT `name` (project name) setting.
-* `${appVersion}`: The value of the SBT `version` (project version) setting.
-* `${baseDirectory}`: The value of the SBT `baseDirectory` setting.
-* `${installSourceDir}`: The value of the `installSourceDir` setting. (See
-  above.)
-* `${libraryDependencies}`: The value of the SBT `libraryDependencies` setting.
 * `${allDependencies}`: The names of all the jars SBT needs to build your
   project, as a single string of paths separated by commas. This string
   can be substituted directly into the `includes` value of a `fileset`.
   (See [Fileset](#fileset), below.)
+* `${appName}`: The value of the SBT `name` (project name) setting.
+* `${appVersion}`: The value of the SBT `version` (project version) setting.
+* `${appJar}`: The compiled and packaged jar file for your project.
+* `${baseDirectory}`: The value of the SBT `baseDirectory` setting.
+* `${classDirectory}`: The directory where compiled classes go.
+* `${installSourceDir}`: The value of the `installSourceDir` setting. (See
+  above.)
+* `${libraryDependencies}`: The value of the SBT `libraryDependencies` setting.
+* `${normalizedName}`: The SBT-normalized name of your application. SBT uses
+  this name to generate jar file names and the like.
+* `${scalaVersion}`: The Scala version used to compile your project.
 
 ## Types
 
