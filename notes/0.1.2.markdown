@@ -1,0 +1,5 @@
+* Default log level in *sbt-izpack* is now `Info`, not `Warn`.
+* `(createXML in IzPack)` now depends on `(packageBin in Compile)`, so
+  compilation will be triggered automatically, before the installer
+  configuration is translated.
+* `(createInstaller in IzPack)` now depends on `(createXML in IzPack)`.

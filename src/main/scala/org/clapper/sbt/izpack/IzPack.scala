@@ -112,7 +112,7 @@ object IzPack extends Plugin
         configFile <<= installSourceDir(_ / "izpack.yml"),
         tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
         variables := Nil,
-        izLogLevel := Level.Warn,
+        izLogLevel := Level.Info,
 
         predefinedVariables <<= predefinedVariablesTask,
         captureSettings1 <<= captureSettingsTask1,
@@ -123,7 +123,15 @@ object IzPack extends Plugin
     )) ++ 
     inConfig(Compile)(Seq(
         // Hook our clean into the global one.
-        clean in Global <<= (clean in IzPack).identity
+        clean in Global <<= (clean in IzPack).identity,
+
+        (createXML in IzPack) <<= (createXML in IzPack).dependsOn(
+            packageBin in Compile
+        ),
+
+        (createInstaller in IzPack) <<= (createInstaller in IzPack).dependsOn(
+            createXML in IzPack
+        )
     ))
 
     // -----------------------------------------------------------------
