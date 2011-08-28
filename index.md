@@ -166,6 +166,8 @@ The plugin provides three new SBT tasks.
 
 **`izpack:create-xml`**
 
+<div class="indent" markdown="1">
+
 Converts the YAML configuration file to the XML file required by IzPack.
 You generally don't need to invoke this task yourself;
 `izpack:create-installer` invokes it automatically. This task exists
@@ -175,17 +177,27 @@ The tasks depends on `(packageBin in Compile)`, so your code will
 automatically be compiled and packaged into its jar file(s) before the
 installer XML is generated.
 
+</div>
+
 **`izpack:create-installer`**
+
+<div class="indent" markdown="1">
 
 Generates the installer jar file from your YAML configuration. The tasks
 depends on `izpack:create-xml` which, in turn, depends on `(packageBin in
 Compile)`, so your code will automatically be compiled and packaged into
 its jar file(s) before the installer is created.
 
+</div>
+
 **`izpack:clean`**
+
+<div class="indent" markdown="1">
 
 Deletes all *sbt-izpack*-generated files and directories. `izpack:clean` is
 also automatically linked into the main SBT `clean` task.
+
+</div>
 
 # The YAML configuration file
 
