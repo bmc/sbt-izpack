@@ -69,7 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
 
-    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.2"
+    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.4"
 
 Next, in your main project `build.sbt` file, add:
 
@@ -77,9 +77,25 @@ Next, in your main project `build.sbt` file, add:
 
 Now the plugin is available to your SBT builds.
 
-# Settings
+# Settings and Tasks
 
-The plugin provides the following new settings.
+The plugin provides the following new settings and tasks.
+
+**Note**: All settings and tasks are in an `IzPack` namespace, to avoid import
+clashes with identically named settings from other plugins. The pattern for
+accessing settings in this plugin is:
+
+    IzPack.settingName in IzPack.Config <<= ...
+
+Task access is similar.
+
+`IzPack` appears twice, which is regrettable; however, until [SBT][]
+supports proper namespaces, this appears to be the best way to isolate the
+plugin's definitions from clashing with other plugins, when multiple
+plugins are used (and, thus, automatically imported) into a `build.sbt`
+file.
+
+## Settings
 
 ---
 
@@ -160,7 +176,7 @@ augment the [predefined variables](#predefined_variables) the plugin defines.
 *sbt-izpack* automatically creates an IzPack XML `<variables>` section and
 populates it with these variables and the predefined variables.
 
-# Tasks
+## Tasks
 
 The plugin provides three new SBT tasks.
 

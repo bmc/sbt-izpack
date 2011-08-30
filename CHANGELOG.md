@@ -3,6 +3,21 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
+Version 0.1.4:
+
+* Put plugin settings into a sub-object, so they don't clash with
+  other settings on (auto) import into `build.sbt`. Accessing a setting
+  is now accomplished with:
+
+        IzPack.configFile in IzPack.Config <<= baseDirectory(...)
+
+* Converted code to conform with standard Scala coding style.
+
+Version 0.1.3:
+
+* Renamed various plugin settings and variables, so their names wouldn't
+  clash, on import, with other plugins.
+
 Version 0.1.2:
 
 * Default log level in *sbt-izpack* is now `Info`, not `Warn`.
