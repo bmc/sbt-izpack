@@ -1,1 +1,7 @@
+* Put plugin settings into a sub-object, so they don't clash with
+  other settings on (auto) import into `build.sbt`. Accessing a setting
+  is now accomplished with:
+
+        IzPack.configFile in IzPack.Config <<= baseDirectory(...)
+
 * Converted code to conform with standard Scala coding style.

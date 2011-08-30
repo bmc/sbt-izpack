@@ -12,10 +12,13 @@ libraryDependencies += "net.databinder" %% "posterous-sbt" % "0.3.0_sbt0.10.1"
 
 seq(org.clapper.sbt.izpack.IzPack.izPackSettings: _*)
 
-izConfigFile in IzPack <<= baseDirectory(_ / "src" / "install.yml")
+IzPack.configFile in IzPack.Config <<= baseDirectory(_ / "src" / "install.yml")
 
-izInstallSourceDir in IzPack <<= baseDirectory(_ / "src" / "installer")
+IzPack.installSourceDir in IzPack.Config <<= 
+  baseDirectory(_ / "src" / "installer")
 
-izVariables in IzPack <<= (libraryDependencies) {l => Seq(("libs", l.map(_.getClass.getName).toString))}
+IzPack.variables in IzPack.Config <<= (libraryDependencies) {l =>
+  Seq(("libs", l.map(_.getClass.getName).toString))
+}
 
-izLogLevel in IzPack := Level.Debug
+IzPack.logLevel in IzPack.Config := Level.Debug
