@@ -108,7 +108,7 @@ HTML files for install screens.
 
 Example:
 
-    installSourceDir in IzPack <<= baseDirectory(_ / "src" / "install")
+    IzPack.installSourceDir in IzPack.Config <<= baseDirectory(_ / "src" / "install")
     
 Default: `baseDirectory(_ / "src" / "izpack")`
 
@@ -122,9 +122,9 @@ The YAML file describing the installer configuration. (See the
 section entitled [The YAML configuration file](#the_yaml_configuration_file)
 for details.) Examples:
 
-    sourceFile in IzPack <<= baseDirectory(_ / "src" / "install" / "install.yml")
+    IzPack.configFile in IzPack.Config <<= baseDirectory(_ / "src" / "install" / "install.yml")
 
-Default: `installSourceDir(_ / "izpack.yml")`
+Default: `IzPack.installSourceDir(_ / "izpack.yml")`
 
 ---
 
@@ -136,7 +136,7 @@ The path to the installer jar file IzPack is to generate.
 
 Example:
 
-    installerJar in IzPack <<= baseDirectory(_ / "target" / "install.jar")
+    IzPack.installerJar in IzPack.Config <<= baseDirectory(_ / "target" / "install.jar")
 
 Default: `baseDirectory(_ / "target" / "installer.jar")`
 
@@ -166,9 +166,9 @@ the following two lines define:
 
     name := "my-project"
 
-    variables in IzPack <+= name {name => ("projectName", name)}
+    IzPack.variables in IzPack.Config <+= name {name => ("projectName", name)}
 
-    variables in IzPack += ("author", "Brian Clapper")
+    IzPack.variables in IzPack.COnfig += ("author", "Brian Clapper")
 
 These variables can be substituted within the YAML configuration file and
 augment the [predefined variables](#predefined_variables) the plugin defines.
