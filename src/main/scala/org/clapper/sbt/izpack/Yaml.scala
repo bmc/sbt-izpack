@@ -144,6 +144,18 @@ private[izpack] trait OptionKeys {
   final val Exclude     = "exclude"
 }
 
+private[izpack] trait XMLable {
+  
+  def toXML: XMLElem
+
+  def seqToXML(name: String, things: Seq[XMLable]) = {
+    if (things.length > 0)
+      things.map(_.toXML)
+    else
+      new XMLComment("No " + name + " sections")
+  }
+}
+
 /**
  * Maintains a map of string options.
  */
@@ -194,7 +206,7 @@ private[izpack] trait HasParseType extends OptionStrings {
     setOption(ParseType, ParseTypes(parseType))
 }
 
-private[izpack] trait IzPackSection extends OptionKeys {
+private[izpack] trait IzPackSection extends OptionKeys with XMLable {
   import Implicits._
 
   /**
@@ -519,7 +531,7 @@ private[izpack] class IzPackYamlConfig extends IzPackSection with Util {
 // Info section classes
 // ---------------------------------------------------------------------------
 
-private[izpack] class Author {
+private[izpack] class Author extends XMLable {
   @BeanProperty var name: String = ""
   var email: Option[String] = None
 
@@ -659,13 +671,13 @@ private[izpack] class Resources extends IzPackSection {
 
   protected def sectionToXML = {
     <resources>
-      {resources.map(_.toXML)} {installDirectories.map(_.toXML).flatten}
+      {resources.map(_.toXML)} {installDirectories.map(_.toXMLSeq).flatten}
     </resources>
   }
 }
 
 private[izpack] class Resource extends OptionStrings
-with Util with HasParseType {
+with Util with HasParseType with XMLable {
     private val SectionName = "resource"
 
   import Implicits._
@@ -699,9 +711,9 @@ with OperatingSystemConstraints {
 
   def setPath(s: String): Unit = path = Some(FileUtil.nativePath(s))
 
-  def toXML = {
+  def toXMLSeq = {
     for (os <- operatingSystems)
-    yield <res id={"TargetPanel.dir." + os} src={installDirString(os)}/>
+      yield <res id={"TargetPanel.dir." + os} src={installDirString(os)}/>
   }
 
   private def installDirString(os: String): String = {
@@ -858,25 +870,18 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util {
 
     val elem =
       <panel classname={requiredString(ClassName, SectionName)}>
-        {listToXML("help", help.toList)}
-        {listToXML("validators", validators.toList)}
-        {listToXML("actions", actions.toList)}
+        {seqToXML("help", help.toList)}
+        {seqToXML("validators", validators.toList)}
+        {seqToXML("actions", actions.toList)}
       </panel>
 
     elem addAttributes Seq(("jar", jar.map(_.absolutePath)),
                            ("id", getOption(Id)),
                            ("condition", getOption(Condition)))
   }
-
-  private def listToXML(name: String, things: List[{def toXML: XMLElem}]) = {
-    if (things.length > 0)
-      things.map(_.toXML)
-    else
-      new XMLComment("No " + name + " sections")
-  }
 }
 
-private[izpack] class Help extends OptionStrings with Util {
+private[izpack] class Help extends OptionStrings with Util with XMLable {
   private val SectionName = "help"
 
   def setIso3(s: String): Unit = setOption(Iso3, s)
@@ -896,7 +901,7 @@ private[izpack] class Help extends OptionStrings with Util {
 /**
  * Validators
  */
-private[izpack] class Validator extends OptionStrings {
+private[izpack] class Validator extends OptionStrings with XMLable {
   def setClassName(s: String): Unit = setOption(ClassName, s)
   def toXML = <validator classname={requiredString(ClassName, "validator")}/>
 }
@@ -904,7 +909,7 @@ private[izpack] class Validator extends OptionStrings {
 /**
  * Embedded actions.
  */
-private[izpack] class Action extends OptionStrings {
+private[izpack] class Action extends OptionStrings with XMLable {
   private val SectionName = "action"
 
   private object StageTypes extends ConstrainedValues(
@@ -929,7 +934,11 @@ private[izpack] class Packs extends IzPackSection with Util {
 
   def setPack(pack: Pack): Unit = packs += pack
 
-  protected def sectionToXML = <packs> {packs.map(_.toXML)} </packs>
+  protected def sectionToXML = {
+    <packs>
+      {seqToXML("packs", packs.toList)}
+    </packs>
+  }
 }
 
 private[izpack] class Pack extends IzPackSection with OperatingSystemConstraints
@@ -972,9 +981,9 @@ with Util with OptionStrings {
         <description>{optionString(Description)}</description>
         {operatingSystemsToXML}
         {depends.map(s => <depends packname={s}/>)}
-        {files.map(_.toXML)} {filesets.map(_.toXML).flatten}
-        {parsables.map(_.toXML)}
-        {executables.map(_.toXML)}
+        {files.map(_.toXML)} {filesets.map(_.toXMLSeq).flatten}
+        {seqToXML("parsable", parsables.toList)}
+        {seqToXML("executables", executables.toList)}
         {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
       </pack>
 
@@ -1019,7 +1028,7 @@ with OperatingSystemConstraints with OptionStrings with Overridable with Util {
   }
 }
 
-private[izpack] class SingleFile extends OneFile with Util {
+private[izpack] class SingleFile extends OneFile with Util{
   import Implicits._
 
   val SectionName = "singleFile"
@@ -1095,7 +1104,7 @@ with Util with OptionStrings with Overridable {
   def setTargetDir(path: String): Unit = setOption(TargetDir, path)
   def setCondition(s: String): Unit = setOption(Condition, s)
 
-  def toXML = {
+  def toXMLSeq = {
     /* &~ is set difference */
     val paths = filterRegexExcludes((includes &~ excludes).toSet)
     // XML Node objects appear to hash weirdly, so convert the set
@@ -1123,7 +1132,7 @@ with Util with OptionStrings with Overridable {
   }
 }
 
-private[izpack] class UpdateCheck extends OptionStrings with Util {
+private[izpack] class UpdateCheck extends OptionStrings with Util with XMLable {
   private val SectionName = "updateCheck"
 
   def setInclude(s: String): Unit = setOption(Include, s)
