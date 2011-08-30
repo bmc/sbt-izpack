@@ -10,14 +10,14 @@
   modification, are permitted provided that the following conditions are
   met:
 
-  * Redistributions of source code must retain the above copyright notice,
+   * Redistributions of source code must retain the above copyright notice,
     this list of conditions and the following disclaimer.
 
-  * Redistributions in binary form must reproduce the above copyright
+   * Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
 
-  * Neither the names "clapper.org", "sbt-izpack", nor the names of any
+   * Neither the names "clapper.org", "sbt-izpack", nor the names of any
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
 
@@ -86,11 +86,10 @@ object MissingSection {
 
 case class SBTData(variables: Map[String, String], tempDir: File)
 
-/**
- * Implemented by config-related classes that can take an operating
- * system constraint. Assumes that the resulting XML can contain
- * an `<os family="osname"/>` element.
- */
+/** Implemented by config-related classes that can take an operating
+  * system constraint. Assumes that the resulting XML can contain
+  * an `<os family="osname"/>` element.
+  */
 trait OperatingSystemConstraints extends Util {
   import Constants._
 
@@ -114,9 +113,8 @@ trait OperatingSystemConstraints extends Util {
     operatingSystems.map(os => <os family={os}/>)
 }
 
-/**
- * Keys used in option strings.
- */
+/** Keys used in option strings.
+  */
 private[izpack] trait OptionKeys {
   // Values must match what IzPack expects
   final val OS          = "os"
@@ -156,9 +154,8 @@ private[izpack] trait XMLable {
   }
 }
 
-/**
- * Maintains a map of string options.
- */
+/** Maintains a map of string options.
+  */
 private[izpack] trait OptionStrings extends OptionKeys {
   import Implicits._
 
@@ -209,31 +206,27 @@ private[izpack] trait HasParseType extends OptionStrings {
 private[izpack] trait IzPackSection extends OptionKeys with XMLable {
   import Implicits._
 
-  /**
-   * XML for the section
-   */
+  /** XML for the section
+    */
   protected def sectionToXML: XMLElem
 
-  /**
-   * Contains any custom XML for the section. Typically supplied
-   * by the writer of the build script.
-   */
+  /** Contains any custom XML for the section. Typically supplied
+    * by the writer of the build script.
+    */
   var customXML: XMLNodeSeq = XMLNodeSeq.Empty
 
-  /**
-   * Various setters and getters for the XML, including bean methods,
-   * for the YAML parser.
-   */
+  /** Various setters and getters for the XML, including bean methods,
+    * for the YAML parser.
+    */
   def setCustomXML(xml: JArrayList[String]): Unit =
     customXML ++= xml.map {x => XML.loadString(x)}
   def getCustomXML: JArrayList[String] = null
 
-  /**
-   * Generate the section's XML. Calls out to `sectionToXML`
-   * and uses the contents of `customXML`.
-   *
-   * @return An XML element
-   */
+  /** Generate the section's XML. Calls out to `sectionToXML`
+    * and uses the contents of `customXML`.
+    *
+    * @return An XML element
+    */
   def toXML: XMLElem = {
     // Append any custom XML to the end, as a series of child
     // elements.
@@ -244,29 +237,27 @@ private[izpack] trait IzPackSection extends OptionKeys with XMLable {
             allChildren: _*)
   }
 
-  /**
-   * Create an empty XML node IFF a boolean flag is set. Otherwise,
-   * return an XML comment.
-   *
-   * @param name   the XML element name
-   * @param create the flag to test; if `true`, an XML element is created
-   *
-   * @return An XML node, either a node of the specified name or a comment
-   */
+  /** Create an empty XML node IFF a boolean flag is set. Otherwise,
+    * return an XML comment.
+    *
+    * @param name   the XML element name
+    * @param create the flag to test; if `true`, an XML element is created
+    *
+    * @return An XML node, either a node of the specified name or a comment
+    */
   protected def maybeXML(name: String, create: Boolean): XMLNode =
     maybeXML(name, create, Map.empty[String,Option[String]])
 
-  /**
-   * Create an empty XML node IFF a boolean flag is set. Otherwise,
-   * return an XML comment.
-   *
-   * @param name   the XML element name
-   * @param create the flag to test; if `true`, an XML element is created
-   * @param attrs  name/value pairs for the XML attributes to attach
-   *               to the element. An empty map signifies no attributes
-   *
-   * @return An XML node, either a node of the specified name or a comment
-   */
+  /** Create an empty XML node IFF a boolean flag is set. Otherwise,
+    * return an XML comment.
+    *
+    * @param name   the XML element name
+    * @param create the flag to test; if `true`, an XML element is created
+    * @param attrs  name/value pairs for the XML attributes to attach
+    *               to the element. An empty map signifies no attributes
+    *
+    * @return An XML node, either a node of the specified name or a comment
+    */
   protected def maybeXML(name: String,
                          create: Boolean,
                          attrs: Map[String, Option[String]]): XMLNode = {
@@ -301,9 +292,8 @@ private[izpack] object Constants{
   val IzPackVariableEscape = "@@@"
 }
 
-/**
- * The configuration parser.
- */
+/** The configuration parser.
+  */
 class IzPackYamlConfigParser(sbtData: SBTData,
                              logLevel: LogLevel.Value,
                              log: Logger) extends Util {
@@ -377,17 +367,15 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   }
 }
 
-/**
- * A regrettable global...
- */
+/** A regrettable global...
+  */
 private[izpack] object Globals {
   var variables = Map.empty[String,String]
   var sbtData: Option[SBTData] = None
 }
 
-/**
- * Base configuration class.
-*/
+/** Base configuration class.
+ */
 private[izpack] class IzPackYamlConfig extends IzPackSection with Util {
   private var theInfo: Option[Info] = None
   private var languages: List[String] = Nil
@@ -841,9 +829,8 @@ private[izpack] class Panels extends IzPackSection {
   protected def sectionToXML = <panels> {panels.map(_.toXML)} </panels>
 }
 
-/**
- * A single panel.
- */
+/** A single panel.
+  */
 private[izpack] class Panel extends IzPackSection with OptionStrings with Util {
   private val SectionName = "panel"
 
@@ -859,9 +846,8 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util {
   def setAction(a: Action): Unit = actions += a
   def setValidator(v: Validator): Unit = validators += v
 
-  /**
-   * Allows assignment of `jar` field
-   */
+  /** Allows assignment of `jar` field
+    */
   def setJar(p: String): Unit =
     jar = Some(new RichFile(new File(p)))
 
@@ -898,17 +884,15 @@ private[izpack] class Help extends OptionStrings with Util with XMLable {
   }
 }
 
-/**
- * Validators
- */
+/** Validators
+  */
 private[izpack] class Validator extends OptionStrings with XMLable {
   def setClassName(s: String): Unit = setOption(ClassName, s)
   def toXML = <validator classname={requiredString(ClassName, "validator")}/>
 }
 
-/**
- * Embedded actions.
- */
+/** Embedded actions.
+  */
 private[izpack] class Action extends OptionStrings with XMLable {
   private val SectionName = "action"
 

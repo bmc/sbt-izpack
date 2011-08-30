@@ -10,14 +10,14 @@
   modification, are permitted provided that the following conditions are
   met:
 
-  * Redistributions of source code must retain the above copyright notice,
+   * Redistributions of source code must retain the above copyright notice,
     this list of conditions and the following disclaimer.
 
-  * Redistributions in binary form must reproduce the above copyright
+   * Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
 
-  * Neither the names "clapper.org", "sbt-izpack", nor the names of any
+   * Neither the names "clapper.org", "sbt-izpack", nor the names of any
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
 
@@ -33,7 +33,7 @@
   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------
-*/
+ */
 
 package org.clapper.sbt.izpack
 
@@ -52,10 +52,9 @@ case class Metadata(installSourceDir: RichFile,
                     scalaVersion: String,
                     private[sbt] val updateReport: UpdateReport)
 
-/**
- * Plugin for SBT (Simple Build Tool) to configure and build an IzPack
- * installer.
- */
+/** Plugin for SBT (Simple Build Tool) to configure and build an IzPack
+  * installer.
+  */
 object IzPack extends Plugin {
   // -----------------------------------------------------------------
   // Plugin Settings and Tasks
@@ -255,12 +254,11 @@ object IzPack extends Plugin {
     installXML
   }
 
-  /**
-   * Build the actual installer jar.
-   *
-   * @param izPackXML  the IzPack installer XML configuration
-   * @param outputJar  where to store the installer jar file
-   */
+  /** Build the actual installer jar.
+    *
+    * @param izPackXML  the IzPack installer XML configuration
+    * @param outputJar  where to store the installer jar file
+    */
   private def makeInstaller(izPackXML: RichFile,
                             outputJar: RichFile,
                             log: Logger) = {

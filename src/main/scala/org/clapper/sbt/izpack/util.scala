@@ -10,14 +10,14 @@
   modification, are permitted provided that the following conditions are
   met:
 
-  * Redistributions of source code must retain the above copyright notice,
+   * Redistributions of source code must retain the above copyright notice,
     this list of conditions and the following disclaimer.
 
-  * Redistributions in binary form must reproduce the above copyright
+   * Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
 
-  * Neither the names "clapper.org", "sbt-izpack", nor the names of any
+   * Neither the names "clapper.org", "sbt-izpack", nor the names of any
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
 
@@ -47,25 +47,22 @@ import scala.xml.{Attribute => XMLAttribute,
 
 import java.io.File
 
-/**
- * Some utility stuff.
- */
+/** Some utility stuff.
+  */
 trait Util {
-  /**
-   * Writes a string to a file, overwriting the file.
-   *
-   * @param path  the SBT path for the file to be written
-   * @param str   the string to write
-   */
+  /** Writes a string to a file, overwriting the file.
+    *
+    * @param path  the SBT path for the file to be written
+    * @param str   the string to write
+    */
   protected def writeStringToFile(path: RichFile, str: String): Unit =
     writeStringToFile(path.absolutePath, str)
 
-  /**
-   * Writes a string to a file, overwriting the file.
-   *
-   * @param path  the path of the file to be written
-   * @param str   the string to write
-   */
+  /** Writes a string to a file, overwriting the file.
+    *
+    * @param path  the path of the file to be written
+    * @param str   the string to write
+    */
   protected def writeStringToFile(path: String, str: String): Unit = {
     import java.io.FileWriter
     val writer = new FileWriter(path)
@@ -89,24 +86,21 @@ trait Util {
 
   protected def izError(msg: String) = throw new IzPluginException(msg)
 
-  /**
-   * Convert a boolean value to a "yes" or "no" string
-   */
+  /** Convert a boolean value to a "yes" or "no" string
+    */
   protected def yesno(b: Boolean): String = if (b) "yes" else "no"
 
-  /**
-   * Handle English variant spellings, mapping them into appropriate
-   * IzPack-ese.
-   */
+  /** Handle English variant spellings, mapping them into appropriate
+    * IzPack-ese.
+    */
   protected def adjustLicenseSpelling(s: String): String = {
     s.replaceAll("License", "Licence").
     replaceAll("license", "licence")
   }
 }
 
-/**
- * Useful for constraining a value to one of a set of values.
- */
+/** Useful for constraining a value to one of a set of values.
+  */
 private[izpack] class ConstrainedValues(val values: Set[String],
                                         val default: String,
                                         val name: String)
@@ -120,9 +114,8 @@ extends Util {
   }
 }
 
-/**
- * An enhanced XML element class, with some useful utility methods.
- */
+/** An enhanced XML element class, with some useful utility methods.
+  */
 private[izpack] class EnhancedXMLElem(val elem: XMLElem) {
   def addAttributes(attrs: Seq[Tuple2[String, Option[String]]]): XMLElem = {
     @tailrec
@@ -140,25 +133,21 @@ private[izpack] class EnhancedXMLElem(val elem: XMLElem) {
   }
 }
 
-/**
- * Useful string methods
- */
+/** Useful string methods
+  */
 private[izpack] class XString(val str: String) {
-  /**
-   * Convenience method to check for a string that's null or empty.
-   */
+  /** Convenience method to check for a string that's null or empty.
+    */
   def isEmpty = (str == null) || (str.trim == "")
 
-  /**
-   * Convert the string to an option. An empty or null string
-   * is converted to `None`.
-   */
+  /** Convert the string to an option. An empty or null string
+    * is converted to `None`.
+    */
   def toOption = if (isEmpty) None else Some(str)
 }
 
-/**
- * Various implicit conversions.
- */
+/** Various implicit conversions.
+  */
 private[izpack] object Implicits {
   implicit def stringToWrapper(s: String): XString = new XString(s)
   implicit def wrapperToString(is: XString): String = is.str
