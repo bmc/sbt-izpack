@@ -1,0 +1,24 @@
+*sbt-izpack* setting and task keys are already inside in inner `IzPack` object,
+for namespace scoping. This revision adds a trick by [Josh Suereth][], to make
+usage easier. Basically, the keys are now defined like this:
+
+    object IzPack extends Plugin {
+      object IzPack {
+        val Config = config("izpack") extend(Runtime)
+
+        val configFile = SettingKey[File]("config-file") in Config
+        val installerJar = SettingKey[RichFile]("installer-jar") in Config
+        ...
+      }
+    }
+
+Putting the `in Config` after *each* setting or task changes the `build.sbt`
+usage pattern from the clunky
+
+    IzPack.configFile in IzPack <<= ...
+
+to the far more deliciously appealing
+
+    IzPack.configFile <<= ...
+
+[Josh Suereth]: http://suereth.blogspot.com/

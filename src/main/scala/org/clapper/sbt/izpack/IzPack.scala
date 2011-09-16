@@ -60,35 +60,52 @@ object IzPack extends Plugin {
   // Plugin Settings and Tasks
   // -----------------------------------------------------------------
 
+  // NOTE: Using an inner object, with "in Config" after the Setting
+  // or Task definition allows this usage pattern:
+  //
+  //     IzPack.configFile <<= ...
+  //
+  // The "in Config" trick is courtesy the masterful Josh Suereth.
   object IzPack {
-    val Config = config("izpack")
-    //val izPackConfig = SettingKey[IzPackConfig]("izpack-config")
-    val configFile = SettingKey[File]("config-file")
-    val installerJar = SettingKey[RichFile]("installer-jar")
+    val Config = config("izpack") extend(Runtime)
+
+    val configFile = SettingKey[File]("config-file") in Config
+    val installerJar = SettingKey[RichFile]("installer-jar") in Config
+
     val installSourceDir = SettingKey[File](
       "install-source-dir",
       "Directory containing auxiliary installer source files."
-    )
-    val installXML = SettingKey[File]("install-xml",
-                                      "Path to the generated XML file.")
+    ) in Config
+
+    val installXML = SettingKey[File](
+      "install-xml", "Path to the generated XML file."
+    ) in Config
+
     val variables = SettingKey[Seq[Tuple2[String, String]]](
       "variables", "Additional variables for substitution in the config"
-    )
+    ) in Config
+
     val tempDirectory = SettingKey[File](
       "temp-dir", "Where to generate temporary installer files."
-    )
+    ) in Config
+
     val logLevel = SettingKey[Level.Value](
       "log-level", "Log level within sbt-izpack"
-    )
+    ) in Config
 
-    val createXML = TaskKey[RichFile]("create-xml", "Create IzPack XML")
-    val createInstaller = TaskKey[Unit]("create-installer",
-                                        "Create IzPack installer")
+    val createXML = TaskKey[RichFile](
+      "create-xml", "Create IzPack XML"
+    ) in Config
 
-    val clean = TaskKey[Unit]("clean", "Remove target files.")
+    val createInstaller = TaskKey[Unit](
+      "create-installer", "Create IzPack installer"
+    ) in Config
+
+    val clean = TaskKey[Unit]("clean", "Remove target files.") in Config
+
     val predefinedVariables = TaskKey[Map[String, String]](
       "predefined-variables", "Predefined sbt-izpack variables"
-    )
+    ) in Config
 
     val captureSettings1 = TaskKey[Map[String,String]](
       "-capture-settings-1",
