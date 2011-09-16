@@ -3,6 +3,35 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
+Version 0.2:
+
+*sbt-izpack* setting and task keys are already inside in inner `IzPack` object,
+for namespace scoping. This revision adds a trick by [Josh Suereth][], to make
+usage easier. Basically, the keys are now defined like this:
+
+    object IzPack extends Plugin {
+      object IzPack {
+        val Config = config("izpack") extend(Runtime)
+
+        val configFile = SettingKey[File]("config-file") in Config
+        val installerJar = SettingKey[RichFile]("installer-jar") in Config
+        ...
+      }
+    }
+
+Putting the `in Config` after *each* setting or task changes the `build.sbt`
+usage pattern from the clunky
+
+    IzPack.configFile in IzPack <<= ...
+
+to the far more deliciously appealing
+
+    IzPack.configFile <<= ...
+
+[Josh Suereth]: http://suereth.blogspot.com/
+
+----
+
 Version 0.1.4:
 
 * Put plugin settings into a sub-object, so they don't clash with
@@ -13,10 +42,14 @@ Version 0.1.4:
 
 * Converted code to conform with standard Scala coding style.
 
+----
+
 Version 0.1.3:
 
 * Renamed various plugin settings and variables, so their names wouldn't
   clash, on import, with other plugins.
+
+----
 
 Version 0.1.2:
 
@@ -25,6 +58,8 @@ Version 0.1.2:
   compilation will be triggered automatically, before the installer
   configuration is translated.
 * `(createInstaller in IzPack)` now depends on `(createXML in IzPack)`.
+
+----
 
 Version 0.1.1:
 
@@ -41,6 +76,8 @@ Version 0.1.1:
   project's generated jar file) and `$classDirectory` (the directory
   containing the compiled classes and the jar file, from SBT's
   `classDirectory` setting).
+
+----
 
 Version 0.1:
 

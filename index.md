@@ -69,7 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
 
-    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.1.4"
+    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.2"
 
 Next, in your main project `build.sbt` file, add:
 
@@ -85,15 +85,9 @@ The plugin provides the following new settings and tasks.
 clashes with identically named settings from other plugins. The pattern for
 accessing settings in this plugin is:
 
-    IzPack.settingName in IzPack.Config <<= ...
+    IzPack.settingName <<= ...
 
 Task access is similar.
-
-`IzPack` appears twice, which is regrettable; however, until [SBT][]
-supports proper namespaces, this appears to be the best way to isolate the
-plugin's definitions from clashing with other plugins, when multiple
-plugins are used (and, thus, automatically imported) into a `build.sbt`
-file.
 
 ## Settings
 
@@ -108,7 +102,7 @@ HTML files for install screens.
 
 Example:
 
-    IzPack.installSourceDir in IzPack.Config <<= baseDirectory(_ / "src" / "install")
+    IzPack.installSourceDir <<= baseDirectory(_ / "src" / "install")
     
 Default: `baseDirectory(_ / "src" / "izpack")`
 
@@ -122,7 +116,7 @@ The YAML file describing the installer configuration. (See the
 section entitled [The YAML configuration file](#the_yaml_configuration_file)
 for details.) Examples:
 
-    IzPack.configFile in IzPack.Config <<= baseDirectory(_ / "src" / "install" / "install.yml")
+    IzPack.configFile <<= baseDirectory(_ / "src" / "install" / "install.yml")
 
 Default: `IzPack.installSourceDir(_ / "izpack.yml")`
 
@@ -136,7 +130,7 @@ The path to the installer jar file IzPack is to generate.
 
 Example:
 
-    IzPack.installerJar in IzPack.Config <<= baseDirectory(_ / "target" / "install.jar")
+    IzPack.installerJar <<= baseDirectory(_ / "target" / "install.jar")
 
 Default: `baseDirectory(_ / "target" / "installer.jar")`
 
@@ -166,9 +160,9 @@ the following two lines define:
 
     name := "my-project"
 
-    IzPack.variables in IzPack.Config <+= name {name => ("projectName", name)}
+    IzPack.variables <+= name {name => ("projectName", name)}
 
-    IzPack.variables in IzPack.COnfig += ("author", "Brian Clapper")
+    IzPack.variables += ("author", "Brian Clapper")
 
 These variables can be substituted within the YAML configuration file and
 augment the [predefined variables](#predefined_variables) the plugin defines.
