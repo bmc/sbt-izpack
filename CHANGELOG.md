@@ -3,6 +3,12 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
+Version 0.2.1:
+
+* `IzPack.izPackSettings` is now deprecated, in favor of just `IzPack.settings`.
+
+----
+
 Version 0.2:
 
 *sbt-izpack* setting and task keys are already inside in inner `IzPack` object,

@@ -69,13 +69,13 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins/build.sbt` (if it
 doesn't already exist) and add the following:
 
-    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.2"
+    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.2.1"
 
 Next, in your main project `build.sbt` file, add:
 
-    seq(org.clapper.sbt.izpack.IzPack.izPackSettings: _*)
+    seq(IzPack.settings: _*)
 
-Now the plugin is available to your SBT builds.
+Now the plugin and its settings are available to your SBT builds.
 
 # Settings and Tasks
 
