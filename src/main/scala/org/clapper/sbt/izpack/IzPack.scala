@@ -116,34 +116,36 @@ object IzPack extends Plugin {
       "-capture-settings-2",
       "Don't mess with this. Seriously. If you do, you'll break the plugin."
     )
-  }
 
-  val izPackSettings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack.Config)(Seq(
+    val settings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack.Config)(Seq(
 
-    IzPack.installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
-    IzPack.installSourceDir <<= baseDirectory(_ / "src" / "izpack"),
-    IzPack.installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
-    IzPack.configFile <<= IzPack.installSourceDir(_ / "izpack.yml"),
-    IzPack.tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
-    IzPack.variables := Nil,
-    IzPack.logLevel := Level.Info,
+      IzPack.installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
+      IzPack.installSourceDir <<= baseDirectory(_ / "src" / "izpack"),
+      IzPack.installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
+      IzPack.configFile <<= IzPack.installSourceDir(_ / "izpack.yml"),
+      IzPack.tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
+      IzPack.variables := Nil,
+      IzPack.logLevel := Level.Info,
 
-    IzPack.predefinedVariables <<= predefinedVariablesTask,
-    IzPack.captureSettings1 <<= captureSettingsTask1,
-    IzPack.captureSettings2 <<= captureSettingsTask2,
-    IzPack.createXML <<= createXMLTask,
-    IzPack.createInstaller <<= createInstallerTask,
-    IzPack.clean <<= cleanTask
-  )) ++
-  inConfig(Compile)(Seq(
-    // Hook our clean into the global one.
-    clean in Global <<= (IzPack.clean in IzPack.Config).identity,
+      IzPack.predefinedVariables <<= predefinedVariablesTask,
+      IzPack.captureSettings1 <<= captureSettingsTask1,
+      IzPack.captureSettings2 <<= captureSettingsTask2,
+      IzPack.createXML <<= createXMLTask,
+      IzPack.createInstaller <<= createInstallerTask,
+      IzPack.clean <<= cleanTask
+    )) ++
+    inConfig(Compile)(Seq(
+      // Hook our clean into the global one.
+      clean in Global <<= (IzPack.clean in IzPack.Config).identity,
 
-    (IzPack.createXML in IzPack.Config) <<=
-      (IzPack.createXML in IzPack.Config).dependsOn(
+      (IzPack.createXML) <<= (IzPack.createXML).dependsOn(
         packageBin in Compile
       )
-  ))
+    ))
+  }
+
+  // Deprecated. Backward compatibility.
+  val izPackSettings = IzPack.settings
 
   // -----------------------------------------------------------------
   // Methods

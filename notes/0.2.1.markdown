@@ -1,0 +1,2 @@
+* `IzPack.izPackSettings` is now deprecated, in favor of just
+  `IzPack.settings`.
