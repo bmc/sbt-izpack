@@ -66,10 +66,15 @@ into the the IzPack XML syntax turns out to be straightforward.
 
 # Getting the Plugin
 
-First, within your SBT project, create `project/plugins/build.sbt` (if it
+First, within your SBT project, create `project/plugins.sbt` (if it
 doesn't already exist) and add the following:
 
-    libraryDependencies += "org.clapper" %% "sbt-izpack" % "0.2.1"
+    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3")
+
+    resolvers += Resolver.url(
+      "sbt-plugin-releases",
+      new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/")
+    )(Resolver.ivyStylePatterns)
 
 Next, in your main project `build.sbt` file, add:
 

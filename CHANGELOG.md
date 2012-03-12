@@ -3,6 +3,13 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
+Version 0.3.0:
+
+* Updated to SBT 0.11.2.
+* Added support for *ls.implicit.ly* metadata.
+
+----
+
 Version 0.2.1:
 
 * `IzPack.izPackSettings` is now deprecated, in favor of just `IzPack.settings`.
