@@ -60,10 +60,6 @@ object IzPack extends Plugin {
   // Plugin Settings and Tasks
   // -----------------------------------------------------------------
 
-  // NOTE: Using an inner object, with "in Config" after the Setting
-  // or Task definition allows this usage pattern:
-  //
-  //     IzPack.configFile <<= ...
   object IzPack {
     val Config = config("izpack") extend(Runtime)
 
