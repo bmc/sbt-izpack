@@ -11,11 +11,17 @@
 
 name := "sbt-izpack"
 
-version := "0.3"
+version := "0.3.1"
 
 sbtPlugin := true
 
 organization := "org.clapper"
+
+licenses := Seq("BSD-like" ->
+  url("http://software.clapper.org/sbt-izpack/license.html")
+)
+
+description := "SBT plugin to generate an IzPack installer"
 
 // ---------------------------------------------------------------------------
 // Additional compiler options and plugins
@@ -28,7 +34,7 @@ seq(lsSettings :_*)
 
 (LsKeys.tags in LsKeys.lsync) := Seq("izpack", "installer")
 
-(description in LsKeys.lsync) := "SBT plugin to generate an IzPack installer"
+(description in LsKeys.lsync) <<= description(d => d)
 
 // ---------------------------------------------------------------------------
 // Other dependendencies
@@ -37,7 +43,7 @@ seq(lsSettings :_*)
 libraryDependencies ++= Seq(
     "org.codehaus.izpack" % "izpack-standalone-compiler" % "4.3.4" % "compile",
     "org.yaml" % "snakeyaml" % "1.9",
-    "org.clapper" %% "grizzled-scala" % "1.0.10"
+    "org.clapper" %% "grizzled-scala" % "1.0.11"
 )
 
 // ---------------------------------------------------------------------------
@@ -51,6 +57,12 @@ publishTo <<= (version) { version: String =>
                        ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
    Some(Resolver.url(name, new URL(url))(Resolver.ivyStylePatterns))
 }
+
+publishMavenStyle := false
+
+publishArtifact in (Compile, packageBin) := true
+
+publishArtifact in (Test, packageBin) := false
 
 publishArtifact in (Compile, packageDoc) := false
 
