@@ -3,7 +3,13 @@ title: "Change Log: sbt-izpack"
 layout: default
 ---
 
-Version 0.3.0:
+Version 0.3.1:
+
+* Fixed Ivy-related publishing issue.
+
+----
+
+Version 0.3:
 
 * Updated to SBT 0.11.2.
 * Added support for *ls.implicit.ly* metadata.
