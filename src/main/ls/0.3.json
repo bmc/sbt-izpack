@@ -1,0 +1,27 @@
+
+{
+ "organization":"org.clapper",
+ "name":"sbt-izpack",
+ "version":"0.3",
+ "description":"SBT plugin to generate an IzPack installer",
+ "site":"",
+ "tags":["izpack","installer"],
+ "docs":"",
+ "licenses": [],
+ "resolvers": ["http://scala-tools.org/repo-releases"],
+ "dependencies": [{
+   "organization":"org.codehaus.izpack",
+   "name": "izpack-standalone-compiler",
+   "version": "4.3.4"
+  },{
+   "organization":"org.yaml",
+   "name": "snakeyaml",
+   "version": "1.9"
+  },{
+   "organization":"org.clapper",
+   "name": "grizzled-scala",
+   "version": "1.0.8"
+  }],
+ "scalas": ["2.9.1","2.9.0","2.9.0-1"],
+ "sbt": true
+}

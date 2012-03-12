@@ -135,10 +135,6 @@ object IzPack extends Plugin {
     inConfig(Compile)(Seq(
       // Hook our clean into the global one.
       clean in Global <<= (IzPack.clean in IzPack.Config)
-
-      (IzPack.createXML) <<= (IzPack.createXML).dependsOn(
-        packageBin in Compile
-      )
     ))
   }
 
@@ -234,12 +230,13 @@ object IzPack extends Plugin {
   }
 
   private def createXMLTask = {
+    // packageBin in Compile -- sets up dependency on that task.
     (IzPack.configFile, IzPack.installXML, IzPack.variables,
      IzPack.predefinedVariables, IzPack.tempDirectory, IzPack.logLevel,
-     streams) map {
+     packageBin in Compile, streams) map {
 
       (configFile, installXML, variables, predefinedVariables,
-       tempdir, logLevel, streams) =>
+       tempdir, logLevel, packageBin, streams) =>
 
       createXML(configFile, variables, predefinedVariables, installXML,
                 tempdir, logLevel, streams.log)

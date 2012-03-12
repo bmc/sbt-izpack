@@ -37,7 +37,7 @@ seq(lsSettings :_*)
 libraryDependencies ++= Seq(
     "org.codehaus.izpack" % "izpack-standalone-compiler" % "4.3.4" % "compile",
     "org.yaml" % "snakeyaml" % "1.9",
-    "org.clapper" %% "grizzled-scala" % "1.0.8"
+    "org.clapper" %% "grizzled-scala" % "1.0.10"
 )
 
 // ---------------------------------------------------------------------------
