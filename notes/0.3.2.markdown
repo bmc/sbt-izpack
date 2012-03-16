@@ -1,0 +1,3 @@
+Fixed a `scala.MatchError`, arising from a match against an `ArrayBuffer`,
+instead of a `List`. This error caused the installer to abort, during
+generation of the XML, under certain circumstances.

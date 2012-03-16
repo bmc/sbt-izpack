@@ -120,7 +120,7 @@ private[izpack] class EnhancedXMLElem(val elem: XMLElem) {
   def addAttributes(attrs: Seq[Tuple2[String, Option[String]]]): XMLElem = {
     @tailrec
     def doAdd(e: XMLElem, attrs: Seq[Tuple2[String, String]]): XMLElem = {
-      attrs match {
+      attrs.toList match {
         case Nil =>
           e
         case (name, value) :: tail =>
