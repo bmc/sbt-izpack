@@ -1,14 +1,14 @@
 ---
-title: "sbt-izpack: An IzPack plugin for SBT 0.10.x"
+title: "sbt-izpack: An IzPack plugin for SBT"
 layout: withTOC
 ---
 
 # Introduction
 
-*sbt-izpack* is a plugin for the [Scala][]-based [SBT][] 0.10.x build tool.
-[IzPack][] is an open source tool that allows you to create flexible
-Java-based graphical and command-line installers. This plugin allows you to
-use IzPack directly from your SBT 0.10.x project.
+*sbt-izpack* is a plugin for the [Scala][]-based [SBT][] build tool (version
+0.10.x or better). [IzPack][] is an open source tool that allows you to create
+flexible Java-based graphical and command-line installers. This plugin allows
+you to use IzPack directly from your SBT 0.10.x project.
 
 This document explains how to use the plugin.
 
@@ -69,7 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins.sbt` (if it
 doesn't already exist) and add the following:
 
-    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.1")
+    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.3")
 
     resolvers += Resolver.url(
       "sbt-plugin-releases",
@@ -1148,7 +1148,7 @@ request. Along with any patch you send:
 [Scala Maven Guide]: http://www.scala-lang.org/node/345
 [SBT]: https://github.com/harrah/xsbt/
 [bmc@clapper.org]: mailto:bmc@clapper.org
-[changelog]: CHANGELOG.html
+[changelog]: https://github.com/bmc/sbt-izpack/blob/master/CHANGELOG.md
 [SBT cross-building]: http://code.google.com/p/simple-build-tool/wiki/CrossBuild
 [IzPack XML]: http://izpack.org/documentation/installation-files.html
 [Izpack]: http://izpack.org/
