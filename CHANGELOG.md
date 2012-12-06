@@ -1,7 +1,15 @@
+Version 0.3.4.1:
+
+* Republished again, for Ivy-related problems.
+
+----
+
 Version 0.3.4:
 
 * Republished, largely to correct a problem in the Ivy files.
 * Dropped support for Scala 2.9.0 and 2.9.0-1.
+
+----
 
 Version 0.3.3:
 
