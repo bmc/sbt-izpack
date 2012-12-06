@@ -1,3 +1,8 @@
+Version 0.3.4:
+
+* Republished, largely to correct a problem in the Ivy files.
+* Dropped support for Scala 2.9.0 and 2.9.0-1.
+
 Version 0.3.3:
 
 * Updated to SBT 0.12.

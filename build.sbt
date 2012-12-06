@@ -11,7 +11,7 @@
 
 name := "sbt-izpack"
 
-version := "0.3.3"
+version := "0.3.4"
 
 sbtPlugin := true
 
@@ -28,7 +28,7 @@ description := "SBT plugin to generate an IzPack installer"
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
-crossScalaVersions := Seq("2.9.2", "2.9.1", "2.9.0", "2.9.0-1")
+crossScalaVersions := Seq("2.9.2", "2.9.1")
 
 seq(lsSettings :_*)
 
