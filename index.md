@@ -69,7 +69,7 @@ into the the IzPack XML syntax turns out to be straightforward.
 First, within your SBT project, create `project/plugins.sbt` (if it
 doesn't already exist) and add the following:
 
-    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.4.1")
+    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.4.2")
 
     resolvers += Resolver.url(
       "sbt-plugin-releases",
