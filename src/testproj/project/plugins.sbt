@@ -1,4 +1,4 @@
-addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.1")
+addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.4.2")
 
 resolvers += Resolver.url(
   "sbt-plugin-releases",

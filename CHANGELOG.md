@@ -1,3 +1,10 @@
+Version 0.3.4.2:
+
+* One last attempt to fix Ivy-related dependency versioning problems. Seems to
+  work from here.
+
+----
+
 Version 0.3.4.1:
 
 * Republished again, for Ivy-related problems.

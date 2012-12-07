@@ -4,7 +4,7 @@ version := "0.3"
 
 organization := "org.clapper"
 
-libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.0.10"
+libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.0.13"
 
 seq(IzPack.settings: _*)
 

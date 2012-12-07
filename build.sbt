@@ -11,7 +11,7 @@
 
 name := "sbt-izpack"
 
-version := "0.3.4.1"
+version := "0.3.4.2"
 
 sbtPlugin := true
 
@@ -45,9 +45,7 @@ libraryDependencies ++= Seq(
   "org.yaml" % "snakeyaml" % "1.9"
 )
 
-libraryDependencies <<= (scalaVersion, libraryDependencies) { (sv, deps) =>
-  deps :+ "org.clapper" % ("grizzled-scala_" + sv) % "1.0.13"
-}
+libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.0.13"
 
 // ---------------------------------------------------------------------------
 // Publishing criteria
