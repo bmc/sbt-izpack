@@ -1,19 +1,19 @@
 name := "SBT IzPack Plugin Test"
 
-version := "0.3"
+version := "0.4"
 
 organization := "org.clapper"
 
-libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.0.13"
+scalaVersion := "2.11.3"
 
-seq(IzPack.settings: _*)
+libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.3"
 
-IzPack.configFile in IzPack.Config <<= baseDirectory(_ / "src" / "install.yml")
+configFile in IzPack <<= baseDirectory(_ / "src" / "install.yml")
 
-IzPack.installSourceDir in IzPack.Config <<= baseDirectory(_ / "src" / "installer")
+installSourceDir in IzPack <<= baseDirectory(_ / "src" / "installer")
 
-IzPack.variables in IzPack.Config <<= (libraryDependencies) {l =>
+variables in IzPack <<= (libraryDependencies) {l =>
   Seq(("libs", l.map(_.getClass.getName).toString))
 }
 
-IzPack.logLevel in IzPack.Config := Level.Debug
+logLevel in IzPack := Level.Debug

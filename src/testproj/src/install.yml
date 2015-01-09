@@ -31,7 +31,7 @@ info:
     enabled: no
     uninstaller: yes
     condition: izpack.windowsinstall.vista|izpack.windowsinstall.7
-  pack200: yes
+  pack200: no
   customXML:
      - |
        <myJar>$appJar</myJar>

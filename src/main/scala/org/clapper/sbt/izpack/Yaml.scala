@@ -84,6 +84,8 @@ object MissingSection {
   def apply(name: String) = new XMLComment("No " + name + " section.")
 }
 
+case class SbtIzPackException(msg: String) extends Exception(msg)
+
 case class SBTData(variables: Map[String, String], tempDir: File)
 
 /** Implemented by config-related classes that can take an operating
@@ -185,8 +187,12 @@ private[izpack] trait OptionStrings extends OptionKeys {
 
   protected def strOptToXMLElement(name: String): XMLNode = {
     options.getOrElse(name, None).map {
-      text => XMLElem(null, name, XMLNode.NoAttributes, XMLTopScope,
-                      XMLText(text))
+      text => XMLElem(prefix        = null,
+                      label         = name,
+                      attributes    = XMLNode.NoAttributes,
+                      scope         = XMLTopScope,
+                      minimizeEmpty = false,
+                      child         = XMLText(text))
     }.getOrElse(new XMLComment("No " + name + " element"))
   }
 }
@@ -233,8 +239,12 @@ private[izpack] trait IzPackSection extends OptionKeys with XMLable {
     val node = sectionToXML
     val custom = new XMLComment("Custom XML") ++ customXML
     val allChildren = node.child ++ custom
-    XMLElem(node.prefix, node.label, node.attributes, node.scope,
-            allChildren: _*)
+    XMLElem(prefix        = node.prefix,
+            label         = node.label,
+            attributes    = node.attributes,
+            scope         = node.scope,
+            minimizeEmpty = false,
+            child         = (allChildren: _*))
   }
 
   /** Create an empty XML node IFF a boolean flag is set. Otherwise,
@@ -280,8 +290,12 @@ private[izpack] trait IzPackSection extends OptionKeys with XMLable {
       new XMLComment("No " + name + " element")
 
     else {
-      val elem = XMLElem(null, name, XMLNode.NoAttributes, XMLTopScope,
-                         XMLText(""))
+      val elem = XMLElem(prefix        = null,
+                         label         = name,
+                         attributes    = XMLNode.NoAttributes,
+                         scope         = XMLTopScope,
+                         minimizeEmpty = false,
+                         child         = XMLText(""))
       elem addAttributes attrs.toSeq
     }
   }
@@ -300,12 +314,12 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   import Constants._
 
   private class ConfigTemplate(variables: Map[String, String])
-          extends UnixShellStringTemplate({n => Variables.get(n) },
+    extends UnixShellStringTemplate({n => Variables.get(n) },
                                           "[A-Za-z0-9][A-Za-z0-9_]+", true) {
-            override def substitute(name: String): String = {
-              super.substitute(name).replace("@@@", "$")
-            }
-          }
+    override def sub(name: String): Either[String, String] = {
+      super.sub(name).right.map { _.replace("@@@", "$") }
+    }
+  }
 
   private val Variables = Map[String, String](
     // predefined IzPack variables to pass through
@@ -326,11 +340,12 @@ class IzPackYamlConfigParser(sbtData: SBTData,
     }
 
     catch {
-      case e: Throwable =>
+      case e: Throwable => {
         val e2 = findCorrectException(e)
-      if (logLevel == LogLevel.Debug)
-        e2.printStackTrace()
-      izError(e2.getMessage)
+        if (logLevel == LogLevel.Debug)
+          e2.printStackTrace()
+        izError(e2.getMessage)
+      }
     }
   }
 
@@ -353,17 +368,25 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   private def preFilter(lines: List[String]): List[String] = {
     val template = new ConfigTemplate(Variables)
 
-    @tailrec def sub(pre: List[String], post: List[String]): List[String] = {
+    @tailrec def sub(pre: List[String], post: List[String]):
+      Either[String, List[String]] = {
       pre match {
         case Nil =>
-          post
+          Right(post)
 
-        case line :: tail =>
-          sub(tail, post ::: List(template.substitute(line)))
+        case line :: tail => {
+          template.sub(line) match {
+            case Left(e) => Left(e)
+            case Right(s) => sub(tail, post ::: List(s))
+          }
+        }
       }
     }
 
-    sub(lines, Nil)
+    sub(lines, Nil) match {
+      case Left(e) => throw new Exception(s"Error during filtering phase: $e")
+      case Right(s) => s
+    }
   }
 }
 
@@ -629,8 +652,11 @@ private[izpack] class Info extends IzPackSection with OptionStrings with Util {
 // InstallerRequirements section
 // ---------------------------------------------------------------------------
 
-private[izpack] class InstallerRequirement extends IzPackSection
-with Util with OptionStrings {
+private[izpack] class InstallerRequirement
+  extends IzPackSection
+  with Util
+  with OptionStrings {
+
   private val SectionName = "installerRequirement"
 
   def setCondition(v: String): Unit = setOption(Condition, v)
@@ -664,9 +690,13 @@ private[izpack] class Resources extends IzPackSection {
   }
 }
 
-private[izpack] class Resource extends OptionStrings
-with Util with HasParseType with XMLable {
-    private val SectionName = "resource"
+private[izpack] class Resource
+  extends OptionStrings
+  with Util
+  with HasParseType
+  with XMLable {
+
+  private val SectionName = "resource"
 
   import Implicits._
 
@@ -691,8 +721,10 @@ with Util with HasParseType with XMLable {
   }
 }
 
-private[izpack] class InstallDirectory extends Util
-with OperatingSystemConstraints {
+private[izpack] class InstallDirectory
+  extends Util
+  with OperatingSystemConstraints {
+
   import Globals._
 
   private var path: Option[String] = None
@@ -826,7 +858,14 @@ private[izpack] class Panels extends IzPackSection {
 
   def setPanel(panel: Panel): Unit = panels += panel
 
-  protected def sectionToXML = <panels> {panels.map(_.toXML)} </panels>
+  protected def sectionToXML = {
+
+    if (panels.exists(_ == null)) {
+      throw new SbtIzPackException("Empty panel section(s) in YAML.")
+    }
+
+    <panels> {panels.map(_.toXML)} </panels>
+  }
 }
 
 /** A single panel.

@@ -11,3 +11,4 @@ src/testproj/project/plugins/target/
 src/testproj/target/
 src/testproj/.history
 target/
+/.idea

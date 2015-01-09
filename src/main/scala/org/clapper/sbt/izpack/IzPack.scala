@@ -37,11 +37,10 @@
 
 package org.clapper.sbt.izpack
 
-import sbt._
-import Keys._
-import Defaults._
-import Project.Initialize
 import com.izforge.izpack.compiler.CompilerConfig
+import sbt._
+import sbt.Keys._
+import xsbti.compile.CompileProgress
 import scala.io.Source
 import java.io.File
 import scala.collection.mutable.{Map => MutableMap}
@@ -55,16 +54,27 @@ case class Metadata(installSourceDir: RichFile,
 /** Plugin for SBT (Simple Build Tool) to configure and build an IzPack
   * installer.
   */
-object IzPack extends Plugin {
-  // -----------------------------------------------------------------
-  // Plugin Settings and Tasks
-  // -----------------------------------------------------------------
+object Imports {
+  val izpack = TaskKey[File]("izpack", "Generate IzPack XML config from YAML")
 
-  object IzPack {
-    val Config = config("izpack") extend(Runtime)
+  lazy val IzPack = config("izpack") extend(Compile)
+}
 
-    val configFile = SettingKey[File]("config-file")
-    val installerJar = SettingKey[RichFile]("installer-jar")
+object IzPackPlugin extends AutoPlugin {
+
+  override def trigger = allRequirements
+
+  object autoImport { // Stuff that's autoimported into the user's build.sbt
+
+    lazy val IzPack = config("izpack")
+
+    val izpack = taskKey[File]("Generate IzPack XML configuration file.")
+
+    val configFile = SettingKey[File]("config-file", "YAML configuration file")
+
+    val installerJar = SettingKey[File](
+      "installer-jar", "Installer JAR file to generate"
+    )
 
     val installSourceDir = SettingKey[File](
       "install-source-dir",
@@ -75,16 +85,12 @@ object IzPack extends Plugin {
       "install-xml", "Path to the generated XML file."
     )
 
-    val variables = SettingKey[Seq[Tuple2[String, String]]](
+    val variables = SettingKey[Seq[(String, String)]](
       "variables", "Additional variables for substitution in the config"
     )
 
     val tempDirectory = SettingKey[File](
       "temp-dir", "Where to generate temporary installer files."
-    )
-
-    val logLevel = SettingKey[Level.Value](
-      "log-level", "Log level within sbt-izpack"
     )
 
     val createXML = TaskKey[RichFile](
@@ -95,69 +101,125 @@ object IzPack extends Plugin {
       "create-installer", "Create IzPack installer"
     )
 
-    val clean = TaskKey[Unit]("clean", "Remove target files.") in Config
+    val cleanIzPack = TaskKey[Unit](
+      "clean", "Clean up the IzPack-generated files"
+    )
 
     val predefinedVariables = TaskKey[Map[String, String]](
       "predefined-variables", "Predefined sbt-izpack variables"
     )
 
-    val captureSettings1 = TaskKey[Map[String,String]](
-      "-capture-settings-1",
-      "Don't mess with this. Seriously. If you do, you'll break the plugin."
+    val captureSettings = TaskKey[Map[String,String]](
+      "-capture-settings", "For internal use only."
     )
 
-    val captureSettings2 = TaskKey[Map[String,String]](
-      "-capture-settings-2",
-      "Don't mess with this. Seriously. If you do, you'll break the plugin."
+    lazy val baseIzPackSettings: Seq[Def.Setting[_]] = Seq(
+      installerJar              := baseDirectory(_ / "target" / "installer.jar").value,
+      installSourceDir          := baseDirectory(_ / "src" / "izpack").value,
+      installXML                := baseDirectory(_ / "target" / "izpack.xml").value,
+      configFile                := baseDirectory(_ / "src" / "izpack" / "izpack.yml").value,
+      tempDirectory             := baseDirectory(_ / "target" / "installtmp").value,
+      variables                 := Nil,
+      logLevel                  := Level.Info,
+      createXML in IzPack       := IzPackRunner.createInstallXML(IzPack).value,
+      createInstaller in IzPack := IzPackRunner.createInstaller(IzPack).value,
+      clean in IzPack           := IzPackRunner.clean(IzPack).value,
+      captureSettings in IzPack := IzPackRunner.retrieveSettings(IzPack).value
     )
-
-    val settings: Seq[sbt.Project.Setting[_]] = inConfig(IzPack.Config)(Seq(
-
-      IzPack.installerJar <<= baseDirectory(_ / "target" / "installer.jar"),
-      IzPack.installSourceDir <<= baseDirectory(_ / "src" / "izpack"),
-      IzPack.installXML <<= baseDirectory(_ / "target" / "izpack.xml"),
-      IzPack.configFile <<= IzPack.installSourceDir(_ / "izpack.yml"),
-      IzPack.tempDirectory <<= baseDirectory(_ / "target" / "installtmp"),
-      IzPack.variables := Nil,
-      IzPack.logLevel := Level.Info,
-
-      IzPack.predefinedVariables <<= predefinedVariablesTask,
-      IzPack.captureSettings1 <<= captureSettingsTask1,
-      IzPack.captureSettings2 <<= captureSettingsTask2,
-      IzPack.createXML <<= createXMLTask,
-      IzPack.createInstaller <<= createInstallerTask,
-      IzPack.clean <<= cleanTask
-    )) ++
-    inConfig(Compile)(Seq(
-      // Hook our clean into the global one.
-      clean in Global <<= (IzPack.clean in IzPack.Config)
-    ))
   }
 
-  // Deprecated. Backward compatibility.
-  val izPackSettings = IzPack.settings
+  import autoImport._
 
-  // -----------------------------------------------------------------
-  // Methods
-  // -----------------------------------------------------------------
+  val clean = TaskKey[Unit]("clean", "Remove target files.")
 
-  private def allDependencies(updateReport: UpdateReport) =
-    updateReport.allFiles.map(_.absolutePath).mkString(", ")
+  override lazy val projectSettings = inConfig(Imports.IzPack)(baseIzPackSettings)
 
-  private def predefinedVariablesTask = {
-    (IzPack.captureSettings1) map { m => m }
-  }
+  object IzPackRunner {
+    def createInstallXML(config: Configuration):
+      Def.Initialize[Task[File]] = Def.task {
 
-  private def captureSettingsTask1 = {
-    (update, libraryDependencies, (classDirectory in Compile), name, target,
-     normalizedName, version, scalaVersion, IzPack.captureSettings2) map {
+      val inputYaml           = (configFile in config).value
+      val settings            = (captureSettings in config).value
+      val xmlFile             = (installXML in config).value
+      val vars                = (variables in config).value
+      val predefinedVariables = (captureSettings in config).value
+      val tempDir             = (tempDirectory in config).value
+      val level               = (logLevel in config).value
+      val pkgBin              = (packageBin in Compile).value
+      val log                 = streams.value.log
 
-      (updateReport, libraryDependencies, classDirectory, name, target,
-       normalizedName, version, scalaVersion, settingsMap) =>
+      val allVariables = predefinedVariables ++ vars
+      val sbtData      = new SBTData(allVariables, tempDir)
+      val parser       = new IzPackYamlConfigParser(sbtData, level, log)
+      val izConfig     = parser.parse(Source.fromFile(inputYaml))
 
-      val classesParent = classDirectory.getParentFile.getAbsolutePath
-      val jarName = "%s_%s-%s.jar" format (normalizedName,
-                                           scalaVersion,
+      // Create the XML.
+
+      val path = xmlFile.absolutePath
+      log.info("Generating IzPack XML \"%s\"" format path)
+      izConfig.generateXML(xmlFile.asFile, log)
+      log.info("Created " + path)
+      xmlFile
+    }
+
+    def createInstaller(config: Configuration):
+      Def.Initialize[Task[File]] = Def.task {
+
+      IO.withTemporaryDirectory { baseDir =>
+        val jar     = (installerJar in config).value
+        val xmlFile = (createXML in config).value
+        val log     = streams.value.log
+
+        log.info("Generating IzPack installer")
+        val compilerConfig = new CompilerConfig(xmlFile.absolutePath,
+                                                baseDir.getPath,
+                                                CompilerConfig.STANDARD,
+                                                jar.getAbsolutePath)
+        log.info(s"Created installer in ${jar.absolutePath}")
+        compilerConfig.executeCompiler
+
+        jar
+      }
+    }
+
+    def clean(config: Configuration): Def.Initialize[Task[Unit]] = Def.task {
+      import grizzled.file.GrizzledFile._
+
+      val xmlFile = (installXML in config).value
+      val tempDir = (tempDirectory in config).value
+      val str = streams.value
+
+      if (xmlFile.exists) {
+        str.log.debug("Deleting \"%s\"" format installXML)
+        xmlFile.delete
+      }
+
+      if (tempDir.exists) {
+        str.log.debug("Deleting \"%s\"" format tempDirectory)
+        tempDir.deleteRecursively
+      }
+    }
+
+    // Capture settings from the project. Must be a task; otherwise, the
+    // various mappings (and calls to .value) won't compile.
+    private[izpack] def retrieveSettings(config: Configuration):
+      Def.Initialize[Task[Map[String, String]]] = Def.task {
+
+      val updateReport = update.value
+      val libDeps = libraryDependencies.value
+      val classDir = (classDirectory in Compile).value
+      val targetDir = target.value
+      val projectVersion = version.value
+      val scalaV = scalaVersion.value
+
+      val seedSettings = Map(
+        "baseDirectory"       -> baseDirectory.value.absolutePath,
+        "installSourceDir"    -> installSourceDir.value.absolutePath
+      )
+
+      val classesParent = classDir.getParentFile.getAbsolutePath
+      val jarName = "%s_%s-%s.jar" format (normalizedName.value,
+                                           scalaVersion.value,
                                            version)
       val appJar = FileUtil.joinPath(classesParent, jarName)
       val allDeps: Seq[(String, ModuleID, Artifact, File)] = updateReport.toSeq
@@ -166,126 +228,34 @@ object IzPack extends Plugin {
       // Using allDeps, map the library dependencies to their resolved file
       // names.
 
-      val filteredLibDeps = allDeps.filter {tuple =>
-        val (s, module, artifact, file) = tuple
-        val matched = libraryDependencies.filter { l =>
+      val filteredLibDeps = allDeps.filter {
+        case (s, module, artifact, file) => {
+          val matched = libraryDependencies.value.filter { l =>
 
-          // Sometimes, one starts with a prefix of the other (e.g.,
-          // libfoo vs. libfoo_2.8.1)
-          (module.name.startsWith(l.name) || l.name.startsWith(module.name)) &&
-          (l.organization == module.organization)
+            // Sometimes, one starts with a prefix of the other (e.g.,
+            // libfoo vs. libfoo_2.8.1)
+            (module.name.startsWith(l.name) || l.name.startsWith(module.name)) &&
+              (l.organization == module.organization)
+          }
+
+          matched.length > 0
         }
-
-        matched.length > 0
       }
 
       // filteredLibDeps is a tuple: (s, module, artifact, file)
       val libDepFiles = filteredLibDeps.map {_._4}.distinct
 
-      settingsMap ++ Seq(
-        "appName"             -> name,
-        "appVersion"          -> version,
-        "normalizedAppName"   -> normalizedName,
-        "scalaVersion"        -> scalaVersion,
-        "target"              -> target.absolutePath,
+      seedSettings ++ Seq(
+        "appName"             -> name.value,
+        "appVersion"          -> version.value,
+        "normalizedAppName"   -> normalizedName.value,
+        "scalaVersion"        -> scalaVersion.value,
+        "target"              -> targetDir.absolutePath,
         "appJar"              -> appJar,
-        "classDirectory"      -> classDirectory.absolutePath,
-        "allDependencies"     -> updateReport.allFiles.map{_.absolutePath}.
-                                 mkString(", "),
+        "classDirectory"      -> classDir.absolutePath,
+        "allDependencies"     -> updateReport.allFiles.map{_.absolutePath}.mkString(", "),
         "libraryDependencies" -> libDepFiles.mkString(", ")
       )
-    }
-  }
-
-  private def captureSettingsTask2 = {
-    (baseDirectory, IzPack.installSourceDir) map {(base, installSourceDir) =>
-
-      Map.empty[String,String] ++ Seq(
-        "baseDirectory"       -> base.absolutePath,
-        "installSourceDir"    -> installSourceDir.absolutePath
-      )
-    }
-  }
-
-  private def cleanTask: Initialize[Task[Unit]] = {
-    import grizzled.file.GrizzledFile._
-
-    (IzPack.installXML, IzPack.tempDirectory, streams) map {
-      (installXML, tempDirectory, streams) =>
-
-      if (installXML.exists) {
-        streams.log.debug("Deleting \"%s\"" format installXML)
-        installXML.delete
-      }
-
-      if (tempDirectory.exists) {
-        streams.log.debug("Deleting \"%s\"" format tempDirectory)
-        tempDirectory.deleteRecursively
-      }
-    }
-  }
-
-  private def createXMLTask = {
-    // packageBin in Compile -- sets up dependency on that task.
-    (IzPack.configFile, IzPack.installXML, IzPack.variables,
-     IzPack.predefinedVariables, IzPack.tempDirectory, IzPack.logLevel,
-     packageBin in Compile, streams) map {
-
-      (configFile, installXML, variables, predefinedVariables,
-       tempdir, logLevel, packageBin, streams) =>
-
-      createXML(configFile, variables, predefinedVariables, installXML,
-                tempdir, logLevel, streams.log)
-    }
-  }
-
-  private def createInstallerTask = {
-    (IzPack.createXML, IzPack.installerJar, streams) map {
-      (xml, outputJar, streams) =>
-
-      makeInstaller(xml, outputJar, streams.log)
-      ()
-    }
-  }
-
-  private def createXML(configFile: File,
-                        variables: Seq[Tuple2[String, String]],
-                        predefinedVariables: Map[String, String],
-                        installXML: RichFile,
-                        tempDirectory: File,
-                        logLevel: Level.Value,
-                        log: Logger): RichFile = {
-    val allVariables = predefinedVariables ++ variables
-    val sbtData = new SBTData(allVariables, tempDirectory)
-    val parser = new IzPackYamlConfigParser(sbtData, logLevel, log)
-    val izConfig = parser.parse(Source.fromFile(configFile))
-
-    // Create the XML.
-
-    val path = installXML.absolutePath
-    log.info("Generating IzPack XML \"%s\"" format path)
-    izConfig.generateXML(installXML.asFile, log)
-    log.info("Created " + path)
-    installXML
-  }
-
-  /** Build the actual installer jar.
-    *
-    * @param izPackXML  the IzPack installer XML configuration
-    * @param outputJar  where to store the installer jar file
-    */
-  private def makeInstaller(izPackXML: RichFile,
-                            outputJar: RichFile,
-                            log: Logger) = {
-    IO.withTemporaryDirectory {baseDir =>
-
-      log.info("Generating IzPack installer")
-      val compilerConfig = new CompilerConfig(izPackXML.absolutePath,
-                                              baseDir.getPath, // basedir
-                                              CompilerConfig.STANDARD,
-                                              outputJar.absolutePath)
-      log.info("Created installer in " + outputJar.absolutePath)
-      compilerConfig.executeCompiler
     }
   }
 }
