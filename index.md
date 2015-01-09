@@ -66,34 +66,27 @@ into the the IzPack XML syntax turns out to be straightforward.
 
 # Getting the Plugin
 
-First, within your SBT project, create `project/plugins.sbt` (if it
+**NOTE: The following instructions apply to SBT 0.13. If you're using an
+older version of SBT, you should really upgrade already...**
+
+Within your SBT project, create `project/plugins.sbt` (if it
 doesn't already exist) and add the following:
 
-    addSbtPlugin("org.clapper" % "sbt-izpack" % "0.3.4.2")
-
-    resolvers += Resolver.url(
-      "sbt-plugin-releases",
-      new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/")
-    )(Resolver.ivyStylePatterns)
-
-Next, in your main project `build.sbt` file, add:
-
-    seq(IzPack.settings: _*)
-
-Now the plugin and its settings are available to your SBT builds.
+    addSbtPlugin("org.clapper" % "sbt-izpack" % "1.0.0")
 
 # Settings and Tasks
 
 The plugin provides the following new settings and tasks.
 
 **Note**: sbt-izpack uses predefined SBT settings, where possible (e.g.,
-`sources`). Where sbt-izpack defines its own settings, *those* settings are in
-an `IzPack` namespace, to avoid import clashes with identically named settings
-from other plugins. The pattern for accessing settings in this plugin is:
+`sources`). Of course, that's not always possible. To be sure you're updating
+the correct setting, *always* use the form:
 
-    IzPack.settingName in IzPack.Config <<= ...
+    settingName in IzPack
 
-Task access is similar.
+For instance:
+
+    configFile in IzPack <<= baseDirectory(_ / "src" / "install.yml")
 
 ## Settings
 
@@ -108,7 +101,7 @@ HTML files for install screens.
 
 Example:
 
-    IzPack.installSourceDir in IzPack.Config <<= baseDirectory(_ / "src" / "install")
+    installSourceDir in IzPack <<= baseDirectory(_ / "src" / "install")
     
 Default: `baseDirectory(_ / "src" / "izpack")`
 
@@ -122,9 +115,9 @@ The YAML file describing the installer configuration. (See the
 section entitled [The YAML configuration file](#the_yaml_configuration_file)
 for details.) Examples:
 
-    IzPack.configFile in IzPack.Config <<= baseDirectory(_ / "src" / "install" / "install.yml")
+    configFile in IzPack <<= baseDirectory(_ / "src" / "install" / "install.yml")
 
-Default: `IzPack.installSourceDir(_ / "izpack.yml")`
+Default: `installSourceDir(_ / "izpack.yml")`
 
 ---
 
@@ -136,7 +129,7 @@ The path to the installer jar file IzPack is to generate.
 
 Example:
 
-    IzPack.installerJar in IzPack.Config <<= baseDirectory(_ / "target" / "install.jar")
+    installerJar in IzPack <<= baseDirectory(_ / "target" / "install.jar")
 
 Default: `baseDirectory(_ / "target" / "installer.jar")`
 
@@ -163,9 +156,13 @@ the following two lines define a `${projectName}` variable that substitutes the 
 
     name := "my-project"
 
-    IzPack.variables in IzPack.Config <+= name {name => ("projectName", name)}
+    variables in IzPack <+= name {name => ("projectName", name)}
 
-    IzPack.variables in IzPack.Config += ("author", "Brian Clapper")
+    variables in IzPack += ("author", "Brian Clapper")
+
+    variables in IzPack <== libraryDependencies { l =>
+      Seq(("libs", l.map(_.getClass.getName).toString)
+    }
 
 These variables can be substituted within the YAML configuration file and
 augment the [predefined variables](#predefined_variables) the plugin defines.
@@ -1061,10 +1058,13 @@ patterns apply, but, in addition, "\*\*" can be used to indicate "any
 subdirectory or subtree". For instance:
 
 * `includes: lib`: include the lib directory and its contents
-* `includes: **/*.jar`: include all jar files found underneath this directory
+* `includes: "**/*.jar"`: include all jar files found underneath this directory
 * `includes: $baseDirectory/target/**/*.class, $baseDirectory/**/*.scala`:
   include all class files underneath the target directory and all Scala
   source files underneath the top-level directory.
+
+**Warning**: If your pattern starts with an "*", you _must_ quote it. Otherwise,
+the YAML parser *sbt-izpack* uses will gag horribly.
 
 **Note**: Unlike IzPack itself, *sbt-izpack* doesn't have a set of patterns
 it automatically ignores. Thus, it *will* descend into Subversion `.svn`
