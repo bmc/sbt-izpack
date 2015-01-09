@@ -122,5 +122,7 @@ packs:
       os: windows
     fileset:
       includes: ${libraryDependencies}
-      regexExcludes: posterous
+      regexExcludes: "griz.*\\.jar"
       targetDir: $INSTALL_PATH/lib
+      # Must be quoted because of the asterisks.
+      excludes: "/home/bmc/.ivy2/local/org.clapper/**/griz*.jar"

@@ -6,6 +6,8 @@
 // See accompanying license file for license information.
 // ---------------------------------------------------------------------------
 
+import bintray.Keys._
+
 // ---------------------------------------------------------------------------
 // Basic settings
 
@@ -17,9 +19,7 @@ sbtPlugin := true
 
 organization := "org.clapper"
 
-licenses := Seq("BSD-like" ->
-  url("http://software.clapper.org/sbt-izpack/license.html")
-)
+licenses += ("BSD New", url("https://github.com/bmc/sbt-izpack/blob/master/LICENSE.md"))
 
 description := "SBT plugin to generate an IzPack installer"
 
@@ -52,10 +52,9 @@ libraryDependencies += "org.clapper" %% "grizzled-scala" % "1.3"
 
 publishMavenStyle := false
 
-publishArtifact in (Compile, packageBin) := true
+bintrayPublishSettings
 
-publishArtifact in (Test, packageBin) := false
+repository in bintray := "sbt-plugins"
 
-publishArtifact in (Compile, packageDoc) := false
+bintrayOrganization in bintray := None
 
-publishArtifact in (Compile, packageSrc) := false
