@@ -1,3 +1,11 @@
+# Change Log
+
+Version 1.0.0
+
+* Updated for SBT 0.13.x.
+
+----
+
 Version 0.3.4.2:
 
 * One last attempt to fix Ivy-related dependency versioning problems. Seems to
