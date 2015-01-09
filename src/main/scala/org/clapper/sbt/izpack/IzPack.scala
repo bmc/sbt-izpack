@@ -124,8 +124,6 @@ object IzPackPlugin extends AutoPlugin {
 
   import autoImport._
 
-  val clean = TaskKey[Unit]("clean", "Remove target files.")
-
   override lazy val projectSettings = inConfig(IzPack)(baseIzPackSettings)
 
   object IzPackRunner {
