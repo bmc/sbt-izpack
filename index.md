@@ -78,7 +78,7 @@ doesn't already exist) and add the following:
 
 The plugin provides the following new settings and tasks.
 
-**Note**: sbt-izpack uses predefined SBT settings, where possible (e.g.,
+**Note**: *sbt-izpack* uses predefined SBT settings, where possible (e.g.,
 `sources`). Of course, that's not always possible. To be sure you're updating
 the correct setting, *always* use the form:
 
@@ -1140,7 +1140,7 @@ request. Along with any patch you send:
 * Please indicate that you license the work to the Grizzled-Scala project
   under a [BSD License][].
 
-[BSD License]: license.html
+[BSD License]: https://github.com/bmc/sbt-izpack/blob/master/LICENSE.md
 [Scala]: http://www.scala-lang.org/
 [GitHub repository]: http://github.com/bmc/sbt-izpack
 [GitHub]: https://github.com/bmc/
