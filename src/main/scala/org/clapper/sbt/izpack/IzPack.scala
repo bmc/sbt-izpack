@@ -54,12 +54,6 @@ case class Metadata(installSourceDir: RichFile,
 /** Plugin for SBT (Simple Build Tool) to configure and build an IzPack
   * installer.
   */
-object Imports {
-  val izpack = TaskKey[File]("izpack", "Generate IzPack XML config from YAML")
-
-  lazy val IzPack = config("izpack") extend(Compile)
-}
-
 object IzPackPlugin extends AutoPlugin {
 
   override def trigger = allRequirements
@@ -132,7 +126,7 @@ object IzPackPlugin extends AutoPlugin {
 
   val clean = TaskKey[Unit]("clean", "Remove target files.")
 
-  override lazy val projectSettings = inConfig(Imports.IzPack)(baseIzPackSettings)
+  override lazy val projectSettings = inConfig(IzPack)(baseIzPackSettings)
 
   object IzPackRunner {
     def createInstallXML(config: Configuration):

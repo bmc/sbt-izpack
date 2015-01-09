@@ -26,7 +26,7 @@ description := "SBT plugin to generate an IzPack installer"
 // ---------------------------------------------------------------------------
 // Additional compiler options and plugins
 
-scalacOptions ++= Seq("-deprecation", "-unchecked")
+scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature")
 
 crossScalaVersions := Seq("2.10.4")
 
