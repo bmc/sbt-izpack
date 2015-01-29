@@ -633,7 +633,7 @@ does *not* parse the file, so the only variable substitution supported is
 the native IzPack substitution. (That may change in a future release of
 *sbt-izpack*, however.) *Optional*. Default: `no`
 
-**`type`** (string): Only examined if `parse` is `yes`, this value defines
+**`parseType`** (string): Only examined if `parse` is `yes`, this value defines
 what kind of parsing IzPack is to do. *Optional*. Legal values: `ant`,
 `at`, `java`, `javaprop`, `plain`, `shell`, `xml`. Default: `plain`.
 
@@ -976,7 +976,7 @@ supports the following settings:
   
 **`targetFile`** (string): The installed file to be parsed. **Required**.
 
-**`type`** (string): Defines what kind of parsing IzPack is to do.
+**`parseType`** (string): Defines what kind of parsing IzPack is to do.
 *Optional*. Legal values: `ant`, `at`, `java`, `javaprop`, `plain`,
 `shell`, `xml`. Default: `plain`.
 
