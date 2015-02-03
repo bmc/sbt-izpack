@@ -17,7 +17,7 @@ version := "1.0.0"
 
 sbtPlugin := true
 
-organization := "org.clapper"
+organization := "com.github.DavidPerezIngeniero"
 
 licenses += ("BSD New", url("https://github.com/bmc/sbt-izpack/blob/master/LICENSE.md"))
 

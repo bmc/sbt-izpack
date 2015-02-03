@@ -958,6 +958,7 @@ with Util with OptionStrings {
 
   private var files = new ListBuffer[OneFile]
   private var filesets = new ListBuffer[FileSet]
+  private var fsets = new ListBuffer[FSet]
   private var executables = new ListBuffer[Executable]
   private var parsables = new ListBuffer[Parsable]
   private var updateCheck: Option[UpdateCheck] = None
@@ -976,6 +977,7 @@ with Util with OptionStrings {
   def setFile(s: FileOrDirectory): Unit = files += s
   def setSingleFile(s: SingleFile): Unit = files += s
   def setFileset(s: FileSet): Unit = filesets += s
+  def setFSet(s: FSet): Unit = fsets += s
   def setExecutable(e: Executable): Unit = executables += e
   def setUpdateCheck(u: UpdateCheck): Unit = updateCheck = Some(u)
   def setParsable(p: Parsable): Unit = parsables += p
@@ -991,6 +993,7 @@ with Util with OptionStrings {
         {operatingSystemsToXML}
         {depends.map(s => <depends packname={s}/>)}
         {files.map(_.toXML)} {filesets.map(_.toXMLSeq).flatten}
+	    {fsets.map(_.toXML)}
         {seqToXML("parsable", parsables.toList)}
         {seqToXML("executables", executables.toList)}
         {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
@@ -1076,6 +1079,42 @@ private[izpack] class FileOrDirectory extends OneFile with Util {
 
     elem addAttributes Seq(("condition", getOption(Condition)))
   }
+}
+
+private[izpack] class FSet
+	extends IzPackSection
+	with OperatingSystemConstraints
+	with Util
+	with Overridable {
+
+	import Constants._
+
+	private val SectionName = "fset"
+
+	def setDir(dir: String) {
+		if (!new File(dir).isDirectory)
+			izError(s"FSet/dir invalid: $dir")
+		setOption(Dir, dir)
+	}
+	def setTargetDir(path: String) { setOption(TargetDir, path) }
+	def setIncludes(list: String) { setOption(Include, list) }
+	def setExcludes(list: String) { setOption(Exclude, list) }
+
+	def sectionToXML = {
+		val includes = optionString(Include)
+		<fileset>
+			dir={requiredString(Dir, SectionName)}
+			targetDir={requiredString(TargetDir, SectionName)}
+			includes={if (includes == "") "**/*" else includes}
+			excludes={optionString(Exclude)}
+			override={overrideValue}
+			{operatingSystemsToXML}
+		</fileset>
+	}
+
+	override def toString =
+		s"FSet[includes=<${optionString(Include)}> " +
+			s"excludes=<${optionString(Exclude)}>]"
 }
 
 private[izpack] class FileSet
