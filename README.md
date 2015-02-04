@@ -6,6 +6,26 @@ IzPack SBT Plugin
 This project contains an [IzPack][izpack] plugin for [SBT][sbt] 0.10.1 or
 greater.
 
+This is a fork of the original author [located here](https://github.com/bmc/sbt-izpack/).  
+It has only one difference.  It implements a new element called **fset**.  Instead of the
+original **fileset** element who does have logic for finding files, it delegates all the
+hard work to **IzPack**.
+
+The syntax is:
+
+    fset:
+        # The directory where to search source files.  All paths in "includes" and "excludes"
+        # are relative to this.
+        dir: /mypath
+        # Directory where to install the files
+        targetdir: $INSTALLPATH/destinationFolder
+        # Include several patterns that may use ** and *, separated by spaces or commas.  If omitted, include all files
+        includes: *.jar, **/*/*.class
+        # Same syntax as "includes".  Excludes are processed after includes.
+        excludes: .svn/**, **/Test*
+
+See original [IzPack documentation](http://izpack.org/documentation/installation-files.html#fileset-add-a-fileset).
+
 For SBT 0.7.x, see the [previous version of this plugin][].
 
 For complete documentation, see the [IzPack Plugin web site][].
