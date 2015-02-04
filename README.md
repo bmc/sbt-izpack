@@ -26,6 +26,8 @@ The syntax is:
 
 See original [IzPack documentation](http://izpack.org/documentation/installation-files.html#fileset-add-a-fileset).
 
+[This issue](https://github.com/bmc/sbt-izpack/issues/13) explains the motivation of this fork.
+
 For SBT 0.7.x, see the [previous version of this plugin][].
 
 For complete documentation, see the [IzPack Plugin web site][].
