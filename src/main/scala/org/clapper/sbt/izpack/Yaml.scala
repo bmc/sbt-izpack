@@ -977,7 +977,7 @@ with Util with OptionStrings {
   def setFile(s: FileOrDirectory): Unit = files += s
   def setSingleFile(s: SingleFile): Unit = files += s
   def setFileset(s: FileSet): Unit = filesets += s
-  def setFSet(s: FSet): Unit = fsets += s
+  def setFset(s: FSet): Unit = fsets += s
   def setExecutable(e: Executable): Unit = executables += e
   def setUpdateCheck(u: UpdateCheck): Unit = updateCheck = Some(u)
   def setParsable(p: Parsable): Unit = parsables += p
@@ -1092,29 +1092,32 @@ private[izpack] class FSet
 	private val SectionName = "fset"
 
 	def setDir(dir: String) {
-		if (!new File(dir).isDirectory)
-			izError(s"FSet/dir invalid: $dir")
+		//if (!new File(dir).isDirectory)
+		//	izError(s"fset/dir invalid: $dir")
 		setOption(Dir, dir)
 	}
-	def setTargetDir(path: String) { setOption(TargetDir, path) }
-	def setIncludes(list: String) { setOption(Include, list) }
-	def setExcludes(list: String) { setOption(Exclude, list) }
+	def setTargetdir(path: String) { setOption(TargetDir, path) }
+	def setIncludes(v: String) { setOption(Include, v) }
+	def setExcludes(v: String) { setOption(Exclude, v) }
 
 	def sectionToXML = {
-		val includes = optionString(Include)
-		<fileset>
+		val inc = optionString(Include)
+		<fileset
 			dir={requiredString(Dir, SectionName)}
-			targetDir={requiredString(TargetDir, SectionName)}
-			includes={if (includes == "") "**/*" else includes}
+			targetdir={requiredString(TargetDir, SectionName)}
+			includes={if (inc == "") "**/*" else inc}
 			excludes={optionString(Exclude)}
-			override={overrideValue}
+			override={overrideValue} >
 			{operatingSystemsToXML}
 		</fileset>
 	}
 
 	override def toString =
-		s"FSet[includes=<${optionString(Include)}> " +
-			s"excludes=<${optionString(Exclude)}>]"
+		s"""fset[
+	        |s"dir=<${optionString(Dir)}>
+	        |s"targetdir=<${optionString(TargetDir)}>
+			|s"includes=<${optionString(Include)}>
+			|s"excludes=<${optionString(Exclude)}>]""".stripMargin
 }
 
 private[izpack] class FileSet
