@@ -6,6 +6,8 @@ IzPack SBT Plugin
 This project contains an [IzPack][izpack] plugin for [SBT][sbt] 0.10.1 or
 greater.
 
+# Fork
+
 This is a fork of the original author [located here](https://github.com/bmc/sbt-izpack/).  
 It has only one difference.  It implements a new element called **fset**.  Instead of the
 original **fileset** element who does have logic for finding files, it delegates all the
@@ -24,9 +26,18 @@ The syntax is:
         # Same syntax as "includes".  Excludes are processed after includes.
         excludes: .svn/**, **/Test*
 
-See original [IzPack documentation](http://izpack.org/documentation/installation-files.html#fileset-add-a-fileset).
+See original [IzPack documentation](http://izpack.org/documentation/installation-files.html#fileset-add-a-fileset), 
+for further details about IzPack's `fileset`.
 
 [This issue](https://github.com/bmc/sbt-izpack/issues/13) explains the motivation of this fork.
+
+# Use
+
+In order to use this plugin, add this line to `build.sbt`:
+
+    addSbtPlugin("com.github.DavidPerezIngeniero" % "sbt-izpack" % "1.0.0")
+
+# Original documentation
 
 For SBT 0.7.x, see the [previous version of this plugin][].
 
