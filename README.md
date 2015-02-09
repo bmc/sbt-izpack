@@ -35,7 +35,14 @@ for further details about IzPack's `fileset`.
 
 In order to use this plugin, add this line to `build.sbt`:
 
-    addSbtPlugin("com.github.DavidPerezIngeniero" % "sbt-izpack" % "1.0.0")
+    addSbtPlugin("com.github.DavidPerezIngeniero" % "sbt-izpack" % "1.0.1")
+
+# Change log
+
+- Version 1.0.1
+    - Solved [Actions of a panel don't work](https://github.com/bmc/sbt-izpack/issues/18).
+- Version 1.0.0
+    - [New fset element](https://github.com/bmc/sbt-izpack/issues/13).
 
 # Original documentation
 

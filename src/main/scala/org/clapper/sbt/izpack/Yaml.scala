@@ -883,7 +883,9 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util {
       <panel classname={requiredString(ClassName, SectionName)}>
         {seqToXML("help", help.toList)}
         {seqToXML("validators", validators.toList)}
-        {seqToXML("actions", actions.toList)}
+	    <actions>  
+            {seqToXML("actions", actions.toList)}
+	    </actions>
       </panel>
 
     elem addAttributes Seq(("jar", jar.map(_.absolutePath)),
