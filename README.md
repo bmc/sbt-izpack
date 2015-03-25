@@ -37,8 +37,30 @@ In order to use this plugin, add this line to `build.sbt`:
 
     addSbtPlugin("com.github.DavidPerezIngeniero" % "sbt-izpack" % "1.0.1")
 
+# variablesExportPrefixes
+
+The original version of this plugin exports to `IzPack` many variables when building the `izpack.xml` file.
+
+It may seem inofensive, but `IzPack` replaces in file names any $ followed by a matched variable name.
+
+Let's look at an example.  Suppose, you have a variable called `Memory`, and a class called `MemoryLimit` that is nested to class `Settings`.
+In that case, `Settings$MemoryLimit.class` would be generated after compilation and `$Memory` replaced by IzPack in the file name.
+
+Languages like Scala use a lot of nested classes.
+
+If the value of the `MemoryLimit` variable is `20`, the the file would be renamed to `Settings$20.class`, and a `ClassNotFound` exception would be thrown at runtime.
+
+For avoiding this, I use a prefix to all the variables name that must be processed by IzPack and `parsable` entries, i.e. the prefix `izPack`.
+ 
+In that case, the setting would be declared in `build.sbt` as:
+
+    variablesExportPrefixes in IzPack := Seq("izPack")
+
+
 # Change log
 
+- Version 1.0.2
+    - New setting called `variablesExportPrefixes`.
 - Version 1.0.1
     - Solved [Actions of a panel don't work](https://github.com/bmc/sbt-izpack/issues/18).
 - Version 1.0.0

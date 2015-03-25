@@ -295,6 +295,7 @@ private[izpack] object Constants{
 /** The configuration parser.
   */
 class IzPackYamlConfigParser(sbtData: SBTData,
+                             variablesExportPrefixes: Seq[String],
                              logLevel: LogLevel.Value,
                              log: Logger) extends Util {
   import Constants._
@@ -317,6 +318,7 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   def parse(source: Source): IzPackYamlConfig = {
     try {
       Globals.variables = Variables
+      Globals.variablesExportPrefixes = variablesExportPrefixes
       Globals.sbtData = Some(sbtData)
 
       val yaml = new Yaml(new Constructor(classOf[IzPackYamlConfig]))
@@ -380,6 +382,7 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   */
 private[izpack] object Globals {
   var variables = Map.empty[String,String]
+  var variablesExportPrefixes = Seq.empty[String]
   var sbtData: Option[SBTData] = None
 }
 
@@ -483,8 +486,13 @@ private[izpack] class IzPackYamlConfig extends IzPackSection with Util {
     <variables> {
       if (variables.size > 0) {
         // Skip escaped IzPack variables.
-        variables.filter(kv => !kv._2.startsWith(IzPackVariableEscape)).
-        map(kv => <variable name={kv._1} value={kv._2}/>)
+        variables.filter{ case (k, v) =>
+          !v.startsWith(IzPackVariableEscape) && (
+              variablesExportPrefixes.size == 0 ||
+              variablesExportPrefixes.exists(k startsWith _)
+          )
+        }
+        .map(kv => <variable name={kv._1} value={kv._2}/>)
       }
       else
         new XMLComment("No variables")

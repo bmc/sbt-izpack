@@ -83,6 +83,18 @@ object IzPackPlugin extends AutoPlugin {
       "variables", "Additional variables for substitution in the config"
     )
 
+    val variablesExportPrefixes = SettingKey[Seq[String]](
+      """IzPack sometimes substitutes too aggresively variables.
+		|You can limit the scope by exporting only variables with some prefix.
+		|If this setting is empty, then all variables are exported.
+		|
+		|One example:
+		|
+		|You have a variable called Memory, and a class called MemoryLimit that is nested to class Settings.
+		|In that case, "Settings$MemoryLimit.class" would be generated and "$Memory" replaced by IzPack.
+		|""".stripMargin
+    )
+
     val tempDirectory = SettingKey[File](
       "temp-dir", "Where to generate temporary installer files."
     )
@@ -113,6 +125,7 @@ object IzPackPlugin extends AutoPlugin {
       installXML                := baseDirectory(_ / "target" / "izpack.xml").value,
       configFile                := baseDirectory(_ / "src" / "izpack" / "izpack.yml").value,
       tempDirectory             := baseDirectory(_ / "target" / "installtmp").value,
+      variablesExportPrefixes   := Seq.empty,
       variables                 := Nil,
       logLevel                  := Level.Info,
       createXML in IzPack       := IzPackRunner.createInstallXML(IzPack).value,
@@ -142,7 +155,7 @@ object IzPackPlugin extends AutoPlugin {
 
       val allVariables = predefinedVariables ++ vars
       val sbtData      = new SBTData(allVariables, tempDir)
-      val parser       = new IzPackYamlConfigParser(sbtData, level, log)
+      val parser       = new IzPackYamlConfigParser(sbtData, variablesExportPrefixes.value, level, log)
       val izConfig     = parser.parse(Source.fromFile(inputYaml))
 
       // Create the XML.
