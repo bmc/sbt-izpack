@@ -35,7 +35,7 @@ for further details about IzPack's `fileset`.
 
 In order to use this plugin, add this line to `build.sbt`:
 
-    addSbtPlugin("com.github.DavidPerezIngeniero" % "sbt-izpack" % "1.0.1")
+    addSbtPlugin("com.github.dapeca" % "sbt-izpack" % "1.0.3")
 
 # variablesExportPrefixes
 
@@ -59,6 +59,8 @@ In that case, the setting would be declared in `build.sbt` as:
 
 # Change log
 
+- Version 1.0.3
+    - Publishing with a shorter organizacion: com.github.DavidPerezIngeniero ⇒ com.github.dapeca
 - Version 1.0.2
     - New setting called `variablesExportPrefixes`.
 - Version 1.0.1
