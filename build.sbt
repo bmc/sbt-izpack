@@ -13,11 +13,11 @@ import bintray.Keys._
 
 name := "sbt-izpack"
 
-version := "1.0.0"
+version := "1.0.3"
 
 sbtPlugin := true
 
-organization := "org.clapper"
+organization := "com.github.dapeca"
 
 licenses += ("BSD New", url("https://github.com/bmc/sbt-izpack/blob/master/LICENSE.md"))
 

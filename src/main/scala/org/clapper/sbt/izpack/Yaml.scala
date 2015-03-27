@@ -295,6 +295,7 @@ private[izpack] object Constants{
 /** The configuration parser.
   */
 class IzPackYamlConfigParser(sbtData: SBTData,
+                             variablesExportPrefixes: Seq[String],
                              logLevel: LogLevel.Value,
                              log: Logger) extends Util {
   import Constants._
@@ -317,6 +318,7 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   def parse(source: Source): IzPackYamlConfig = {
     try {
       Globals.variables = Variables
+      Globals.variablesExportPrefixes = variablesExportPrefixes
       Globals.sbtData = Some(sbtData)
 
       val yaml = new Yaml(new Constructor(classOf[IzPackYamlConfig]))
@@ -380,6 +382,7 @@ class IzPackYamlConfigParser(sbtData: SBTData,
   */
 private[izpack] object Globals {
   var variables = Map.empty[String,String]
+  var variablesExportPrefixes = Seq.empty[String]
   var sbtData: Option[SBTData] = None
 }
 
@@ -483,8 +486,13 @@ private[izpack] class IzPackYamlConfig extends IzPackSection with Util {
     <variables> {
       if (variables.size > 0) {
         // Skip escaped IzPack variables.
-        variables.filter(kv => !kv._2.startsWith(IzPackVariableEscape)).
-        map(kv => <variable name={kv._1} value={kv._2}/>)
+        variables.filter{ case (k, v) =>
+          !v.startsWith(IzPackVariableEscape) && (
+              variablesExportPrefixes.size == 0 ||
+              variablesExportPrefixes.exists(k startsWith _)
+          )
+        }
+        .map(kv => <variable name={kv._1} value={kv._2}/>)
       }
       else
         new XMLComment("No variables")
@@ -883,7 +891,9 @@ private[izpack] class Panel extends IzPackSection with OptionStrings with Util {
       <panel classname={requiredString(ClassName, SectionName)}>
         {seqToXML("help", help.toList)}
         {seqToXML("validators", validators.toList)}
-        {seqToXML("actions", actions.toList)}
+	    <actions>  
+            {seqToXML("actions", actions.toList)}
+	    </actions>
       </panel>
 
     elem addAttributes Seq(("jar", jar.map(_.absolutePath)),
@@ -958,6 +968,7 @@ with Util with OptionStrings {
 
   private var files = new ListBuffer[OneFile]
   private var filesets = new ListBuffer[FileSet]
+  private var fsets = new ListBuffer[FSet]
   private var executables = new ListBuffer[Executable]
   private var parsables = new ListBuffer[Parsable]
   private var updateCheck: Option[UpdateCheck] = None
@@ -976,6 +987,7 @@ with Util with OptionStrings {
   def setFile(s: FileOrDirectory): Unit = files += s
   def setSingleFile(s: SingleFile): Unit = files += s
   def setFileset(s: FileSet): Unit = filesets += s
+  def setFset(s: FSet): Unit = fsets += s
   def setExecutable(e: Executable): Unit = executables += e
   def setUpdateCheck(u: UpdateCheck): Unit = updateCheck = Some(u)
   def setParsable(p: Parsable): Unit = parsables += p
@@ -991,6 +1003,7 @@ with Util with OptionStrings {
         {operatingSystemsToXML}
         {depends.map(s => <depends packname={s}/>)}
         {files.map(_.toXML)} {filesets.map(_.toXMLSeq).flatten}
+	    {fsets.map(_.toXML)}
         {seqToXML("parsable", parsables.toList)}
         {seqToXML("executables", executables.toList)}
         {updateCheck.getOrElse(new XMLComment("no updatecheck"))}
@@ -1076,6 +1089,45 @@ private[izpack] class FileOrDirectory extends OneFile with Util {
 
     elem addAttributes Seq(("condition", getOption(Condition)))
   }
+}
+
+private[izpack] class FSet
+	extends IzPackSection
+	with OperatingSystemConstraints
+	with Util
+	with Overridable {
+
+	import Constants._
+
+	private val SectionName = "fset"
+
+	def setDir(dir: String) {
+		//if (!new File(dir).isDirectory)
+		//	izError(s"fset/dir invalid: $dir")
+		setOption(Dir, dir)
+	}
+	def setTargetdir(path: String) { setOption(TargetDir, path) }
+	def setIncludes(v: String) { setOption(Include, v) }
+	def setExcludes(v: String) { setOption(Exclude, v) }
+
+	def sectionToXML = {
+		val inc = optionString(Include)
+		<fileset
+			dir={requiredString(Dir, SectionName)}
+			targetdir={requiredString(TargetDir, SectionName)}
+			includes={if (inc == "") "**/*" else inc}
+			excludes={optionString(Exclude)}
+			override={overrideValue} >
+			{operatingSystemsToXML}
+		</fileset>
+	}
+
+	override def toString =
+		s"""fset[
+	        |s"dir=<${optionString(Dir)}>
+	        |s"targetdir=<${optionString(TargetDir)}>
+			|s"includes=<${optionString(Include)}>
+			|s"excludes=<${optionString(Exclude)}>]""".stripMargin
 }
 
 private[izpack] class FileSet
